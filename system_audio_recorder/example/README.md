@@ -1,6 +1,6 @@
-# cliptext
+# system_audio_recorder_example
 
-A new Flutter project.
+Demonstrates how to use the system_audio_recorder plugin.
 
 ## Getting Started
 
