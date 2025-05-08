@@ -4,6 +4,7 @@ import '../services/system_audio_recorder_service.dart';
 import '../services/storage_service.dart';
 import '../models/recording.dart';
 import 'package:uuid/uuid.dart';
+import '../main.dart';
 
 class RecordPage extends StatefulWidget {
   @override
@@ -25,17 +26,38 @@ class _RecordPageState extends State<RecordPage> {
       setState(() => isRecording = false);
 
       if (path != null) {
-        final id = Uuid().v4();
-        final rec = Recording(
-          id: id,
-          filePath: path,
-          createdAt: DateTime.now(),
-          size: 0, // 目前无法获取实际大小，填 0
-          sourceApp: 'com.android.chrome',
-        );
-        await StorageService.insertRecording(rec.toMap());
+        // 录音已保存，直接弹窗交互，无需插入本地json
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('录音已保存')));
+          // 弹窗询问
+          final action = await showDialog<String>(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: Text('录音已保存'),
+              content: Text('请选择接下来的操作'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop('list'),
+                  child: Text('去列表播放'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop('record'),
+                  child: Text('开始新录制'),
+                ),
+              ],
+            ),
+          );
+          if (action == 'list') {
+            // 切换到录音列表Tab
+            final mainTabState = context.findAncestorStateOfType<MainTabPageState>();
+            if (mainTabState != null && mainTabState.mounted) {
+              mainTabState.setState(() {
+                mainTabState.currentIndex = 1;
+              });
+            }
+          } else if (action == 'record') {
+            // 重新开始录制
+            _onRecordButtonPressed();
+          }
         }
       }
     }

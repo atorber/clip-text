@@ -23,11 +23,11 @@ class MyApp extends StatelessWidget {
 
 class MainTabPage extends StatefulWidget {
   @override
-  State<MainTabPage> createState() => _MainTabPageState();
+  State<MainTabPage> createState() => MainTabPageState();
 }
 
-class _MainTabPageState extends State<MainTabPage> {
-  int _currentIndex = 0;
+class MainTabPageState extends State<MainTabPage> {
+  int currentIndex = 0;
   final _pages = [
     RecordPage(),
     RecordingsListPage(),
@@ -37,15 +37,15 @@ class _MainTabPageState extends State<MainTabPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _pages[_currentIndex],
+      body: _pages[currentIndex],
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
+        currentIndex: currentIndex,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.mic), label: '录制'),
           BottomNavigationBarItem(icon: Icon(Icons.list), label: '录音列表'),
           BottomNavigationBarItem(icon: Icon(Icons.library_books), label: '文本库'),
         ],
-        onTap: (index) => setState(() => _currentIndex = index),
+        onTap: (index) => setState(() => currentIndex = index),
       ),
     );
   }
