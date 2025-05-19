@@ -8,7 +8,6 @@ import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import '../utils/pcm_to_wav.dart';
 import 'package:system_audio_recorder/system_audio_recorder.dart';
-import 'package:receive_intent/receive_intent.dart';
 
 class RecordPage extends StatefulWidget {
   @override

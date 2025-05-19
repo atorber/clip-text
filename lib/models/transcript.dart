@@ -3,12 +3,14 @@ class Transcript {
   final String recordingId;
   final String text;
   final DateTime createdAt;
+  final String? orderId;
 
   Transcript({
     required this.id,
     required this.recordingId,
     required this.text,
     required this.createdAt,
+    this.orderId,
   });
 
   Map<String, dynamic> toMap() {
@@ -17,6 +19,7 @@ class Transcript {
       'recordingId': recordingId,
       'text': text,
       'createdAt': createdAt.toIso8601String(),
+      'orderId': orderId,
     };
   }
 
@@ -26,6 +29,7 @@ class Transcript {
       recordingId: map['recordingId'],
       text: map['text'],
       createdAt: DateTime.parse(map['createdAt']),
+      orderId: map['orderId'],
     );
   }
 } 
