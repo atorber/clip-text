@@ -130,7 +130,8 @@ class SystemAudioRecorderPlugin: FlutterPlugin, MethodChannel.MethodCallHandler,
                         mapOf(
                             "name" to it.name,
                             "size" to it.length(),
-                            "lastModified" to it.lastModified()
+                            "lastModified" to it.lastModified(),
+                            "path" to it.absolutePath
                         )
                     } ?: emptyList()
                     Log.d(TAG, "listRecordings: found ${files.size} files")
@@ -165,7 +166,6 @@ class SystemAudioRecorderPlugin: FlutterPlugin, MethodChannel.MethodCallHandler,
 
             val config = AudioPlaybackCaptureConfiguration.Builder(mediaProjection)
                 .addMatchingUsage(AudioAttributes.USAGE_MEDIA)
-                .excludeUsage(AudioAttributes.USAGE_NOTIFICATION)
                 .build()
 
             recorder = AudioRecord.Builder()

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import '../services/system_audio_recorder_service.dart';
 // import '../services/audio_service.dart'; // 已移除未使用的导入
-import '../services/storage_service.dart';
-import '../models/recording.dart';
-import 'package:uuid/uuid.dart';
 import '../main.dart';
+import 'dart:async';
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
+import '../utils/pcm_to_wav.dart';
 
 class RecordPage extends StatefulWidget {
   @override
@@ -14,21 +16,83 @@ class RecordPage extends StatefulWidget {
 class _RecordPageState extends State<RecordPage> {
   bool isRecording = false;
   String? recordPath;
+  Timer? _timer;
+  int _elapsedSeconds = 0;
+
+  void _startTimer() {
+    _timer?.cancel();
+    _elapsedSeconds = 0;
+    _timer = Timer.periodic(Duration(seconds: 1), (timer) {
+      setState(() {
+        _elapsedSeconds++;
+      });
+    });
+  }
+
+  void _stopTimer() {
+    _timer?.cancel();
+    _timer = null;
+    setState(() {
+      _elapsedSeconds = 0;
+    });
+  }
+
+  String _formatDuration(int seconds) {
+    final m = (seconds ~/ 60).toString().padLeft(2, '0');
+    final s = (seconds % 60).toString().padLeft(2, '0');
+    return '$m:$s';
+  }
 
   void _onRecordButtonPressed() async {
     if (!isRecording) {
       setState(() => isRecording = true);
       recordPath = await SystemAudioRecorderService.startRecord('com.android.chrome');
+      _startTimer();
     } else {
       print('准备停止录制');
       final path = await SystemAudioRecorderService.stopRecord();
       print('停止录制返回: $path');
       setState(() => isRecording = false);
+      _stopTimer();
 
       if (path != null) {
-        // 录音已保存，直接弹窗交互，无需插入本地json
-        if (mounted) {
-          // 弹窗询问
+        // 先询问是否保存
+        final save = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text('是否保存录音？'),
+            content: Text('录音完成，是否保存该录音？'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: Text('否'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: Text('是'),
+              ),
+            ],
+          ),
+        );
+        if (save == true) {
+          // 移动文件到外部存储 Recordings 目录
+          final extDir = await getExternalStorageDirectory();
+          final recordingsDir = Directory('${extDir!.path}/Recordings');
+          if (!await recordingsDir.exists()) {
+            await recordingsDir.create(recursive: true);
+          }
+          final fileName = 'system_record_${DateTime.now().millisecondsSinceEpoch}.pcm';
+          final newPath = '${recordingsDir.path}/$fileName';
+          final file = File(path);
+          final newFile = await file.copy(newPath);
+          await file.delete();
+          // PCM转WAV
+          final wavName = p.setExtension(fileName, '.wav');
+          final wavPath = p.join(recordingsDir.path, wavName);
+          await convertPcmToWav(pcmPath: newFile.path, wavPath: wavPath);
+          // 删除原始PCM文件
+          await newFile.delete();
+          // 弹窗询问后续操作
           final action = await showDialog<String>(
             context: context,
             builder: (context) => AlertDialog(
@@ -47,7 +111,6 @@ class _RecordPageState extends State<RecordPage> {
             ),
           );
           if (action == 'list') {
-            // 切换到录音列表Tab
             final mainTabState = context.findAncestorStateOfType<MainTabPageState>();
             if (mainTabState != null && mainTabState.mounted) {
               mainTabState.setState(() {
@@ -55,12 +118,22 @@ class _RecordPageState extends State<RecordPage> {
               });
             }
           } else if (action == 'record') {
-            // 重新开始录制
             _onRecordButtonPressed();
           }
+        } else {
+          // 不保存，删除临时文件
+          try {
+            await File(path).delete();
+          } catch (e) {}
         }
       }
     }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
   }
 
   @override
@@ -71,7 +144,7 @@ class _RecordPageState extends State<RecordPage> {
         children: [
           Icon(Icons.mic, size: 80, color: Colors.deepOrange),
           SizedBox(height: 20),
-          Text(isRecording ? '正在录制...' : '点击下方按钮开始录制系统音频'),
+          Text(isRecording ? '正在录制...  ${_formatDuration(_elapsedSeconds)}' : '点击下方按钮开始录制系统音频'),
           SizedBox(height: 40),
           ElevatedButton.icon(
             onPressed: _onRecordButtonPressed,

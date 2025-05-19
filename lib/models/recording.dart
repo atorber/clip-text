@@ -29,7 +29,7 @@ class Recording {
   factory Recording.fromPluginMap(Map<String, dynamic> map) {
     return Recording(
       id: map['name'],
-      filePath: map['name'],
+      filePath: map['path'] ?? map['name'],
       createdAt: DateTime.fromMillisecondsSinceEpoch(map['lastModified']),
       size: map['size'] ?? 0,
       sourceApp: null,

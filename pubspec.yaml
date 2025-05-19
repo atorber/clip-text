@@ -1,4 +1,4 @@
-name: cliptext
+name: ClipText
 description: A new Flutter project.
 
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -20,6 +20,7 @@ dependencies:
   uuid: ^4.2.1
   system_audio_recorder:
     path: system_audio_recorder
+  just_audio: ^0.9.36
 
 dev_dependencies:
   flutter_test:
