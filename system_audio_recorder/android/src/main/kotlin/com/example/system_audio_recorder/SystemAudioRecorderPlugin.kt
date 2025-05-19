@@ -80,7 +80,7 @@ class SystemAudioRecorderPlugin: FlutterPlugin, MethodChannel.MethodCallHandler,
                         val localSavedData = savedData
                         if (localSavedData != null) {
                             mediaProjection = mgr.getMediaProjection(savedResultCode, localSavedData)
-                            startRecordWithProjection(mediaProjection, pendingResult)
+                        startRecordWithProjection(mediaProjection, pendingResult)
                         } else {
                             Log.e(TAG, "savedData is null, cannot get MediaProjection")
                             pendingResult?.error("NO_PROJECTION", "savedData is null", null)
@@ -241,15 +241,15 @@ class SystemAudioRecorderPlugin: FlutterPlugin, MethodChannel.MethodCallHandler,
 
             recordingThread = Thread {
                 try {
-                    val os = FileOutputStream(file)
-                    val buffer = ByteArray(bufferSize)
-                    while (isRecording) {
-                        val read = recorder?.read(buffer, 0, buffer.size) ?: 0
-                        if (read > 0) {
-                            os.write(buffer, 0, read)
-                        }
+                val os = FileOutputStream(file)
+                val buffer = ByteArray(bufferSize)
+                while (isRecording) {
+                    val read = recorder?.read(buffer, 0, buffer.size) ?: 0
+                    if (read > 0) {
+                        os.write(buffer, 0, read)
                     }
-                    os.close()
+                }
+                os.close()
                 } catch (e: Exception) {
                     Log.e(TAG, "Exception in recordingThread: ${e.message}", e)
                 }
@@ -269,14 +269,14 @@ class SystemAudioRecorderPlugin: FlutterPlugin, MethodChannel.MethodCallHandler,
 
     private fun stopRecord(result: MethodChannel.Result) {
         synchronized(lock) {
-            try {
+        try {
                 if (!isRecording) {
                     Log.w(TAG, "stopRecord called but not recording")
                     result.success(outputFilePath)
                     outputFilePath = null // 新增
                     return
                 }
-                isRecording = false
+            isRecording = false
                 // 等待录音线程退出
                 recordingThread?.let {
                     try {
@@ -286,23 +286,23 @@ class SystemAudioRecorderPlugin: FlutterPlugin, MethodChannel.MethodCallHandler,
                     }
                 }
                 try {
-                    recorder?.stop()
+            recorder?.stop()
                 } catch (e: Exception) {
                     Log.e(TAG, "Exception in recorder.stop(): ${e.message}", e)
                 }
                 try {
-                    recorder?.release()
+            recorder?.release()
                 } catch (e: Exception) {
                     Log.e(TAG, "Exception in recorder.release(): ${e.message}", e)
                 }
-                recorder = null
-                recordingThread = null
-                Log.d(TAG, "Recording stopped, file: $outputFilePath")
-                result.success(outputFilePath)
+            recorder = null
+            recordingThread = null
+            Log.d(TAG, "Recording stopped, file: $outputFilePath")
+            result.success(outputFilePath)
                 outputFilePath = null // 新增
-            } catch (e: Exception) {
-                Log.e(TAG, "Exception in stopRecord: ${e.message}", e)
-                result.error("STOP_FAILED", e.message, null)
+        } catch (e: Exception) {
+            Log.e(TAG, "Exception in stopRecord: ${e.message}", e)
+            result.error("STOP_FAILED", e.message, null)
                 outputFilePath = null // 新增
             }
         }

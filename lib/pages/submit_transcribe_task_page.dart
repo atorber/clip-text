@@ -6,6 +6,7 @@ import 'package:just_audio/just_audio.dart';
 import 'package:http/http.dart' as http;
 import 'package:crypto/crypto.dart';
 import 'dart:convert';
+import '../main.dart';
 
 class SubmitTranscribeTaskPage extends StatefulWidget {
   final String audioPath;
@@ -218,14 +219,13 @@ class _SubmitTranscribeTaskPageState extends State<SubmitTranscribeTaskPage> {
                               TextButton(
                                 onPressed: () {
                                   Navigator.pop(context); // 关闭弹窗
-                                  // 切换主Tab到录音列表
+                                  Navigator.of(context).pop(); // 返回上一页
+                                  // 跳转到文本库tab页
                                   final mainTabState = context.findAncestorStateOfType<MainTabPageState>();
                                   if (mainTabState != null && mainTabState.mounted) {
                                     mainTabState.setState(() {
-                                      mainTabState.currentIndex = 1;
+                                      mainTabState.currentIndex = 2; // 文本库tab索引
                                     });
-                                  } else {
-                                    Navigator.pop(context); // 兜底返回
                                   }
                                 },
                                 child: Text('确定'),

@@ -175,20 +175,20 @@ class _RecordingsListPageState extends State<RecordingsListPage> {
         child: _loading
             ? Center(child: CircularProgressIndicator())
             : recordings.isEmpty
-                ? ListView(
-                    children: [
-                      SizedBox(height: 120),
-                      Center(child: Text('暂无录音，快去录制吧~', style: TextStyle(fontSize: 16, color: Colors.grey))),
-                    ],
-                  )
-                : ListView.builder(
-                    itemCount: recordings.length,
-                    itemBuilder: (context, index) {
-                      final rec = recordings[index];
+            ? ListView(
+                children: [
+                  SizedBox(height: 120),
+                  Center(child: Text('暂无录音，快去录制吧~', style: TextStyle(fontSize: 16, color: Colors.grey))),
+                ],
+              )
+            : ListView.builder(
+                itemCount: recordings.length,
+                itemBuilder: (context, index) {
+                  final rec = recordings[index];
                       return Column(
                         children: [
                           ListTile(
-                            leading: Icon(Icons.audiotrack),
+                    leading: Icon(Icons.audiotrack),
                             title: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -297,9 +297,9 @@ class _RecordingsListPageState extends State<RecordingsListPage> {
                             ),
                           Divider(height: 1, thickness: 1, indent: 16, endIndent: 16),
                         ],
-                      );
-                    },
-                  ),
+                  );
+                },
+              ),
       ),
     );
   }
