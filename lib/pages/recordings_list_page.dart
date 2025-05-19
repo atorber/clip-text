@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:system_audio_recorder/system_audio_recorder.dart';
 import '../models/recording.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:path/path.dart' as p;

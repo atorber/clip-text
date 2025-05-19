@@ -6,7 +6,9 @@ import android.content.Intent
 import android.media.*
 import android.media.projection.MediaProjection
 import android.media.projection.MediaProjectionManager
+import android.net.Uri
 import android.os.Build
+import android.provider.Settings
 import android.util.Log
 import androidx.annotation.NonNull
 import androidx.annotation.RequiresApi
@@ -34,14 +36,23 @@ class SystemAudioRecorderPlugin: FlutterPlugin, MethodChannel.MethodCallHandler,
     private var isServiceBound = false
     private var serviceConnection: android.content.ServiceConnection? = null
 
+    companion object {
+        var staticChannel: MethodChannel? = null
+        fun sendEventToFlutter(event: String) {
+            staticChannel?.invokeMethod("onFloatingRecorderEvent", event)
+        }
+    }
+
     override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
         channel = MethodChannel(flutterPluginBinding.binaryMessenger, "system_audio_recorder")
         channel.setMethodCallHandler(this)
+        staticChannel = channel
         Log.d(TAG, "Plugin attached to engine")
     }
 
     override fun onDetachedFromEngine(@NonNull binding: FlutterPlugin.FlutterPluginBinding) {
         channel.setMethodCallHandler(null)
+        staticChannel = null
         Log.d(TAG, "Plugin detached from engine")
     }
 
@@ -140,6 +151,38 @@ class SystemAudioRecorderPlugin: FlutterPlugin, MethodChannel.MethodCallHandler,
                     Log.e(TAG, "Exception in listRecordings: ${e.message}", e)
                     result.error("LIST_FAILED", e.message, null)
                 }
+            }
+            "startFloatingRecorder" -> {
+                if (activity == null) {
+                    result.error("NO_ACTIVITY", "No activity", null)
+                    return
+                }
+                // 检查悬浮窗权限
+                if (!Settings.canDrawOverlays(activity)) {
+                    val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                        Uri.parse("package:" + activity!!.packageName))
+                    activity!!.startActivity(intent)
+                    result.error("NO_PERMISSION", "悬浮窗权限未授予", null)
+                    return
+                }
+                val intent = Intent(activity, FloatingRecorderService::class.java)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    activity!!.startForegroundService(intent)
+                } else {
+                    activity!!.startService(intent)
+                }
+                // 最小化APP
+                activity!!.moveTaskToBack(true)
+                result.success(null)
+            }
+            "stopFloatingRecorder" -> {
+                if (activity == null) {
+                    result.error("NO_ACTIVITY", "No activity", null)
+                    return
+                }
+                val intent = Intent(activity, FloatingRecorderService::class.java)
+                activity!!.stopService(intent)
+                result.success(null)
             }
             else -> result.notImplemented()
         }

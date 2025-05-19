@@ -30,4 +30,12 @@ abstract class SystemAudioRecorderPlatform extends PlatformInterface {
   Future<List<Map<String, dynamic>>> listRecordings() {
     throw UnimplementedError('listRecordings() has not been implemented.');
   }
+
+  Future<void> startFloatingRecorder() {
+    throw UnimplementedError('startFloatingRecorder() has not been implemented.');
+  }
+
+  Future<void> stopFloatingRecorder() {
+    throw UnimplementedError('stopFloatingRecorder() has not been implemented.');
+  }
 }

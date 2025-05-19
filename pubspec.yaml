@@ -21,6 +21,7 @@ dependencies:
   system_audio_recorder:
     path: system_audio_recorder
   just_audio: ^0.9.36
+  receive_intent: ^0.2.5
 
 dev_dependencies:
   flutter_test:

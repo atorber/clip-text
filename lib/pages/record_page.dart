@@ -7,6 +7,8 @@ import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import '../utils/pcm_to_wav.dart';
+import 'package:system_audio_recorder/system_audio_recorder.dart';
+import 'package:receive_intent/receive_intent.dart';
 
 class RecordPage extends StatefulWidget {
   @override
@@ -43,11 +45,82 @@ class _RecordPageState extends State<RecordPage> {
     return '$m:$s';
   }
 
+  // 新增：封装保存录音逻辑
+  Future<void> _saveRecording(String path) async {
+    final extDir = await getExternalStorageDirectory();
+    final recordingsDir = Directory('${extDir!.path}/Recordings');
+    if (!await recordingsDir.exists()) {
+      await recordingsDir.create(recursive: true);
+    }
+    final fileName = 'system_record_${DateTime.now().millisecondsSinceEpoch}.pcm';
+    final newPath = '${recordingsDir.path}/$fileName';
+    final file = File(path);
+    final newFile = await file.copy(newPath);
+    await file.delete();
+    // PCM转WAV
+    final wavName = p.setExtension(fileName, '.wav');
+    final wavPath = p.join(recordingsDir.path, wavName);
+    await convertPcmToWav(pcmPath: newFile.path, wavPath: wavPath);
+    // 删除原始PCM文件
+    await newFile.delete();
+    // 弹窗询问后续操作
+    final action = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('录音已保存'),
+        content: Text('请选择接下来的操作'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop('list'),
+            child: Text('去列表播放'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop('record'),
+            child: Text('开始新录制'),
+          ),
+        ],
+      ),
+    );
+    if (action == 'list') {
+      final mainTabState = context.findAncestorStateOfType<MainTabPageState>();
+      if (mainTabState != null && mainTabState.mounted) {
+        mainTabState.setState(() {
+          mainTabState.currentIndex = 1;
+        });
+      }
+    } else if (action == 'record') {
+      _onRecordButtonPressed();
+    }
+    // 保存后清空recordPath
+    recordPath = null;
+  }
+
   void _onRecordButtonPressed() async {
     if (!isRecording) {
       setState(() => isRecording = true);
       recordPath = await SystemAudioRecorderService.startRecord('com.android.chrome');
-      _startTimer();
+      if (recordPath != null) {
+        try {
+          await SystemAudioRecorder().startFloatingRecorder();
+        } catch (e) {
+          if (e.toString().contains('NO_PERMISSION')) {
+            if (mounted) {
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: Text('需要悬浮窗权限'),
+                  content: Text('请在系统设置中授予悬浮窗权限后再试。'),
+                  actions: [TextButton(onPressed: () => Navigator.pop(context), child: Text('确定'))],
+                ),
+              );
+            }
+          }
+        }
+        _startTimer();
+      } else {
+        setState(() => isRecording = false);
+        // 可选：提示用户录音授权失败
+      }
     } else {
       print('准备停止录制');
       final path = await SystemAudioRecorderService.stopRecord();
@@ -75,51 +148,7 @@ class _RecordPageState extends State<RecordPage> {
           ),
         );
         if (save == true) {
-          // 移动文件到外部存储 Recordings 目录
-          final extDir = await getExternalStorageDirectory();
-          final recordingsDir = Directory('${extDir!.path}/Recordings');
-          if (!await recordingsDir.exists()) {
-            await recordingsDir.create(recursive: true);
-          }
-          final fileName = 'system_record_${DateTime.now().millisecondsSinceEpoch}.pcm';
-          final newPath = '${recordingsDir.path}/$fileName';
-          final file = File(path);
-          final newFile = await file.copy(newPath);
-          await file.delete();
-          // PCM转WAV
-          final wavName = p.setExtension(fileName, '.wav');
-          final wavPath = p.join(recordingsDir.path, wavName);
-          await convertPcmToWav(pcmPath: newFile.path, wavPath: wavPath);
-          // 删除原始PCM文件
-          await newFile.delete();
-          // 弹窗询问后续操作
-          final action = await showDialog<String>(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: Text('录音已保存'),
-              content: Text('请选择接下来的操作'),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop('list'),
-                  child: Text('去列表播放'),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop('record'),
-                  child: Text('开始新录制'),
-                ),
-              ],
-            ),
-          );
-          if (action == 'list') {
-            final mainTabState = context.findAncestorStateOfType<MainTabPageState>();
-            if (mainTabState != null && mainTabState.mounted) {
-              mainTabState.setState(() {
-                mainTabState.currentIndex = 1;
-              });
-            }
-          } else if (action == 'record') {
-            _onRecordButtonPressed();
-          }
+          await _saveRecording(path);
         } else {
           // 不保存，删除临时文件
           try {
@@ -128,6 +157,52 @@ class _RecordPageState extends State<RecordPage> {
         }
       }
     }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _listenFloatingRecorderEvent();
+  }
+
+  void _listenFloatingRecorderEvent() {
+    SystemAudioRecorder.setFloatingRecorderEventHandler((event) async {
+      if (event == 'stop') {
+        if (isRecording) {
+          setState(() => isRecording = false);
+          _stopTimer();
+          final save = await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: Text('是否保存录音？'),
+              content: Text('录音完成，是否保存该录音？'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: Text('否'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(true),
+                  child: Text('是'),
+                ),
+              ],
+            ),
+          );
+          if (save == true) {
+            if (recordPath != null) {
+              await _saveRecording(recordPath!);
+            }
+          } else {
+            if (recordPath != null) {
+              try {
+                await File(recordPath!).delete();
+              } catch (e) {}
+              recordPath = null;
+            }
+          }
+        }
+      }
+    });
   }
 
   @override

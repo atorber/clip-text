@@ -21,4 +21,14 @@ class MethodChannelSystemAudioRecorder extends SystemAudioRecorderPlatform {
     if (files == null) return [];
     return files.map((e) => Map<String, dynamic>.from(e as Map)).toList();
   }
+
+  @override
+  Future<void> startFloatingRecorder() async {
+    await methodChannel.invokeMethod('startFloatingRecorder');
+  }
+
+  @override
+  Future<void> stopFloatingRecorder() async {
+    await methodChannel.invokeMethod('stopFloatingRecorder');
+  }
 }
