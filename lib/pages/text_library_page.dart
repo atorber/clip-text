@@ -5,6 +5,7 @@ import 'package:crypto/crypto.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../services/storage_service.dart';
+import '../pages/transcribe_task_detail_page.dart';
 
 class TextLibraryPage extends StatefulWidget {
   @override
@@ -116,56 +117,85 @@ class _TextLibraryPageState extends State<TextLibraryPage> {
                   itemCount: texts.length,
                   itemBuilder: (context, index) {
                     final t = texts[index];
-                    return ListTile(
-                      leading: Icon(Icons.description),
-                      title: Text(t.text.length > 20 ? t.text.substring(0, 20) + '...' : t.text),
-                      subtitle: Text('${t.createdAt.toLocal()}'),
-                      trailing: TextButton(
-                        onPressed: () async {
-                          if (t.orderId == null || t.orderId!.isEmpty) {
-                            showDialog(
-                              context: context,
-                              builder: (_) => AlertDialog(
-                                title: Text('转写结果'),
-                                content: Text('无orderId，无法查询'),
-                                actions: [TextButton(onPressed: () => Navigator.pop(context), child: Text('关闭'))],
+                    return Column(
+                      children: [
+                        ListTile(
+                          leading: Icon(Icons.description),
+                          title: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                t.text.length > 20 ? t.text.substring(0, 20) + '...' : t.text,
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
-                            );
-                            return;
-                          }
-                          showDialog(
-                            context: context,
-                            barrierDismissible: false,
-                            builder: (_) => Center(child: CircularProgressIndicator()),
-                          );
-                          try {
-                            final result = await _queryIflytekResult(t.orderId!);
-                            Navigator.pop(context); // 关闭loading
-                            showDialog(
-                              context: context,
-                              builder: (_) => AlertDialog(
-                                title: Text('转写结果'),
-                                content: SingleChildScrollView(child: Text(result ?? '暂无结果，请稍后刷新')), 
-                                actions: [TextButton(onPressed: () => Navigator.pop(context), child: Text('关闭'))],
+                              SizedBox(height: 4),
+                              Text(
+                                '创建时间: ${t.createdAt.toLocal()}',
+                                style: TextStyle(fontSize: 13, color: Colors.grey[700]),
                               ),
-                            );
-                          } catch (e) {
-                            Navigator.pop(context); // 关闭loading
-                            showDialog(
-                              context: context,
-                              builder: (_) => AlertDialog(
-                                title: Text('查询失败'),
-                                content: Text(e.toString()),
-                                actions: [TextButton(onPressed: () => Navigator.pop(context), child: Text('关闭'))],
+                              SizedBox(height: 8),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  TextButton(
+                                    onPressed: () async {
+                                      if (t.orderId == null || t.orderId!.isEmpty) {
+                                        showDialog(
+                                          context: context,
+                                          builder: (_) => AlertDialog(
+                                            title: Text('转写结果'),
+                                            content: Text('无orderId，无法查询'),
+                                            actions: [TextButton(onPressed: () => Navigator.pop(context), child: Text('关闭'))],
+                                          ),
+                                        );
+                                        return;
+                                      }
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => TranscribeTaskDetailPage(orderId: t.orderId!),
+                                        ),
+                                      );
+                                    },
+                                    child: Text('查看结果'),
+                                  ),
+                                  IconButton(
+                                    icon: Icon(Icons.delete, color: Colors.red),
+                                    tooltip: '删除',
+                                    onPressed: () async {
+                                      final confirm = await showDialog<bool>(
+                                        context: context,
+                                        builder: (context) => AlertDialog(
+                                          title: Text('确认删除'),
+                                          content: Text('确定要删除该转写文本吗？'),
+                                          actions: [
+                                            TextButton(onPressed: () => Navigator.pop(context, false), child: Text('取消')),
+                                            TextButton(onPressed: () => Navigator.pop(context, true), child: Text('删除')),
+                                          ],
+                                        ),
+                                      );
+                                      if (confirm == true) {
+                                        await _deleteTranscript(t.id);
+                                      }
+                                    },
+                                  ),
+                                ],
                               ),
-                            );
-                          }
-                        },
-                        child: Text('查看结果'),
-                      ),
+                            ],
+                          ),
+                        ),
+                        Divider(height: 1, thickness: 1, indent: 16, endIndent: 16),
+                      ],
                     );
                   },
                 ),
     );
+  }
+
+  Future<void> _deleteTranscript(String id) async {
+    await StorageService.deleteTranscriptById(id);
+    await _loadTexts();
   }
 } 

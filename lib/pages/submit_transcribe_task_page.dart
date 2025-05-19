@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:crypto/crypto.dart';
 import 'dart:convert';
 import '../main.dart';
+import 'transcribe_task_detail_page.dart';
 
 class SubmitTranscribeTaskPage extends StatefulWidget {
   final String audioPath;
@@ -203,7 +204,7 @@ class _SubmitTranscribeTaskPageState extends State<SubmitTranscribeTaskPage> {
                         // 保存转写任务到文本库，初始text为空
                         final transcript = {
                           'id': DateTime.now().millisecondsSinceEpoch.toString(),
-                          'recordingId': widget.audioPath.split('/').last,
+                          'recordingId': widget.audioPath,
                           'text': '',
                           'createdAt': DateTime.now().toIso8601String(),
                           'orderId': orderId,
@@ -229,6 +230,18 @@ class _SubmitTranscribeTaskPageState extends State<SubmitTranscribeTaskPage> {
                                   }
                                 },
                                 child: Text('确定'),
+                              ),
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.pop(context); // 关闭弹窗
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => TranscribeTaskDetailPage(orderId: orderId),
+                                    ),
+                                  );
+                                },
+                                child: Text('查看结果'),
                               ),
                             ],
                           ),

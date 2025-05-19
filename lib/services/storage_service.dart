@@ -80,4 +80,22 @@ class StorageService {
       'secretKey': prefs.getString('transcribe_api_secret'),
     };
   }
+
+  // 根据orderId查找转写任务
+  static Future<Map<String, dynamic>?> getTranscriptByOrderId(String orderId) async {
+    final transcripts = await getAllTranscripts();
+    try {
+      return transcripts.firstWhere((e) => e['orderId'] == orderId);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // 根据id删除转写任务
+  static Future<void> deleteTranscriptById(String id) async {
+    final file = await _getTranscriptFile();
+    final list = await getAllTranscripts();
+    list.removeWhere((e) => e['id'] == id);
+    await file.writeAsString(jsonEncode(list));
+  }
 } 
