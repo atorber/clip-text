@@ -57,8 +57,16 @@ class _RecordPageState extends State<RecordPage> {
     final file = File(path);
     final newFile = await file.copy(newPath);
     await file.delete();
-    // PCM转WAV
-    final wavName = p.setExtension(fileName, '.wav');
+    // PCM转WAV, fileName使用当前时间，格式为yyyyMMddHHmmss，例如：20250519163000.wav
+    final now = DateTime.now();
+    final wavName =
+        '${now.year.toString().padLeft(4, '0')}'
+        '${now.month.toString().padLeft(2, '0')}'
+        '${now.day.toString().padLeft(2, '0')}'
+        '${now.hour.toString().padLeft(2, '0')}'
+        '${now.minute.toString().padLeft(2, '0')}'
+        '${now.second.toString().padLeft(2, '0')}.wav';
+
     final wavPath = p.join(recordingsDir.path, wavName);
     await convertPcmToWav(pcmPath: newFile.path, wavPath: wavPath);
     // 删除原始PCM文件

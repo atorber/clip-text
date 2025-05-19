@@ -157,10 +157,13 @@ class _RecordingsListPageState extends State<RecordingsListPage> {
     return '${(size / (1024 * 1024)).toStringAsFixed(1)} MB';
   }
 
-  String _formatDuration(Duration d) {
-    final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
-    final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
-    return '$m:$s';
+  String _formatDateTime(DateTime dt) {
+    return "${dt.year.toString().padLeft(4, '0')}-"
+        "${dt.month.toString().padLeft(2, '0')}-"
+        "${dt.day.toString().padLeft(2, '0')} "
+        "${dt.hour.toString().padLeft(2, '0')}:"
+        "${dt.minute.toString().padLeft(2, '0')}:"
+        "${dt.second.toString().padLeft(2, '0')}";
   }
 
   @override
@@ -186,68 +189,84 @@ class _RecordingsListPageState extends State<RecordingsListPage> {
                         children: [
                           ListTile(
                             leading: Icon(Icons.audiotrack),
-                            title: Text(rec.filePath.split('/').last),
-                            subtitle: Text(
-                              '大小: ${_formatSize(rec.size)}\n'
-                              '时间: ${rec.createdAt}',
-                            ),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
+                            title: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                if (_playingIndex == index && _playerState?.playing == true)
-                                  IconButton(
-                                    icon: Icon(Icons.pause),
-                                    tooltip: '暂停',
-                                    onPressed: _pauseRecording,
-                                  )
-                                else if (_playingIndex == index && _playerState?.playing == false && _playerState?.processingState == ProcessingState.ready)
-                                  IconButton(
-                                    icon: Icon(Icons.play_arrow),
-                                    tooltip: '继续播放',
-                                    onPressed: _resumeRecording,
-                                  )
-                                else
-                                  IconButton(
-                                    icon: Icon(Icons.play_arrow),
-                                    tooltip: '播放',
-                                    onPressed: () => _playRecording(rec, index),
-                                  ),
-                                if (_playingIndex == index)
-                                  IconButton(
-                                    icon: Icon(Icons.stop),
-                                    tooltip: '停止',
-                                    onPressed: _stopRecording,
-                                  ),
-                                IconButton(
-                                  icon: Icon(Icons.delete),
-                                  tooltip: '删除',
-                                  onPressed: () async {
-                                    final confirm = await showDialog<bool>(
-                                      context: context,
-                                      builder: (context) => AlertDialog(
-                                        title: Text('确认删除'),
-                                        content: Text('确定要删除该录音吗？'),
-                                        actions: [
-                                          TextButton(onPressed: () => Navigator.pop(context, false), child: Text('取消')),
-                                          TextButton(onPressed: () => Navigator.pop(context, true), child: Text('删除')),
-                                        ],
-                                      ),
-                                    );
-                                    if (confirm == true) {
-                                      await _deleteRecording(rec);
-                                    }
-                                  },
+                                Text(
+                                  rec.filePath.split('/').last,
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                                TextButton(
-                                  onPressed: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => SubmitTranscribeTaskPage(audioPath: rec.filePath),
+                                SizedBox(height: 4),
+                                Text(
+                                  '大小: ${_formatSize(rec.size)}',
+                                  style: TextStyle(fontSize: 13, color: Colors.grey[700]),
+                                ),
+                                Text(
+                                  '时间: ${_formatDateTime(rec.createdAt)}',
+                                  style: TextStyle(fontSize: 13, color: Colors.grey[700]),
+                                ),
+                                SizedBox(height: 8),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    if (_playingIndex == index && _playerState?.playing == true)
+                                      IconButton(
+                                        icon: Icon(Icons.pause),
+                                        tooltip: '暂停',
+                                        onPressed: _pauseRecording,
+                                      )
+                                    else if (_playingIndex == index && _playerState?.playing == false && _playerState?.processingState == ProcessingState.ready)
+                                      IconButton(
+                                        icon: Icon(Icons.play_arrow),
+                                        tooltip: '继续播放',
+                                        onPressed: _resumeRecording,
+                                      )
+                                    else
+                                      IconButton(
+                                        icon: Icon(Icons.play_arrow),
+                                        tooltip: '播放',
+                                        onPressed: () => _playRecording(rec, index),
                                       ),
-                                    );
-                                  },
-                                  child: Text('转文字'),
+                                    if (_playingIndex == index)
+                                      IconButton(
+                                        icon: Icon(Icons.stop),
+                                        tooltip: '停止',
+                                        onPressed: _stopRecording,
+                                      ),
+                                    IconButton(
+                                      icon: Icon(Icons.delete),
+                                      tooltip: '删除',
+                                      onPressed: () async {
+                                        final confirm = await showDialog<bool>(
+                                          context: context,
+                                          builder: (context) => AlertDialog(
+                                            title: Text('确认删除'),
+                                            content: Text('确定要删除该录音吗？'),
+                                            actions: [
+                                              TextButton(onPressed: () => Navigator.pop(context, false), child: Text('取消')),
+                                              TextButton(onPressed: () => Navigator.pop(context, true), child: Text('删除')),
+                                            ],
+                                          ),
+                                        );
+                                        if (confirm == true) {
+                                          await _deleteRecording(rec);
+                                        }
+                                      },
+                                    ),
+                                    TextButton(
+                                      onPressed: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => SubmitTranscribeTaskPage(audioPath: rec.filePath),
+                                          ),
+                                        );
+                                      },
+                                      child: Text('转文字'),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
@@ -269,13 +288,14 @@ class _RecordingsListPageState extends State<RecordingsListPage> {
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
-                                      Text(_formatDuration(_position ?? Duration.zero)),
-                                      Text(_formatDuration(_duration ?? Duration.zero)),
+                                      Text(_formatDateTime(rec.createdAt)),
+                                      Text(_formatDateTime(rec.createdAt.add(_duration!))),
                                     ],
                                   ),
                                 ],
                               ),
                             ),
+                          Divider(height: 1, thickness: 1, indent: 16, endIndent: 16),
                         ],
                       );
                     },
