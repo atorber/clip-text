@@ -4,6 +4,7 @@ import '../models/recording.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import 'submit_transcribe_task_page.dart';
 
 class RecordingsListPage extends StatefulWidget {
   @override
@@ -236,6 +237,17 @@ class _RecordingsListPageState extends State<RecordingsListPage> {
                                       await _deleteRecording(rec);
                                     }
                                   },
+                                ),
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => SubmitTranscribeTaskPage(audioPath: rec.filePath),
+                                      ),
+                                    );
+                                  },
+                                  child: Text('转文字'),
                                 ),
                               ],
                             ),
