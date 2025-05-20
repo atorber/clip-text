@@ -39,7 +39,7 @@ flutter:
   plugin:
     platforms:
       android:
-        package: com.example.system_audio_recorder
+        package: com.vlist.system_audio_recorder
         pluginClass: SystemAudioRecorderPlugin
 
   # To add assets to your plugin package, add an assets section, like this:

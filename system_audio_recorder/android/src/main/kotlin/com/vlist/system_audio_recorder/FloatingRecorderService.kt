@@ -1,4 +1,4 @@
-package com.example.system_audio_recorder
+package com.vlist.system_audio_recorder
 
 import android.app.Notification
 import android.app.NotificationChannel

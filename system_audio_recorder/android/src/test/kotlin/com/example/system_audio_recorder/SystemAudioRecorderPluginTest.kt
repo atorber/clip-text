@@ -1,4 +1,4 @@
-package com.example.system_audio_recorder
+package com.vlist.system_audio_recorder
 
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel

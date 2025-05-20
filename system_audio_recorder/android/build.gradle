@@ -1,4 +1,4 @@
-group = "com.example.system_audio_recorder"
+group = "com.vlist.system_audio_recorder"
 version = "1.0-SNAPSHOT"
 
 buildscript {
@@ -25,7 +25,7 @@ apply plugin: "com.android.library"
 apply plugin: "kotlin-android"
 
 android {
-    namespace = "com.example.system_audio_recorder"
+    namespace = "com.vlist.system_audio_recorder"
 
     compileSdk = 35
 
