@@ -98,4 +98,15 @@ class StorageService {
     list.removeWhere((e) => e['id'] == id);
     await file.writeAsString(jsonEncode(list));
   }
+
+  // 根据orderId更新转写任务内容
+  static Future<void> updateTranscriptByOrderId(String orderId, Map<String, dynamic> updateFields) async {
+    final file = await _getTranscriptFile();
+    final list = await getAllTranscripts();
+    final idx = list.indexWhere((e) => e['orderId'] == orderId);
+    if (idx != -1) {
+      list[idx].addAll(updateFields);
+      await file.writeAsString(jsonEncode(list));
+    }
+  }
 } 

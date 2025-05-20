@@ -80,7 +80,7 @@ class _TranscribeTaskDetailPageState extends State<TranscribeTaskDetailPage> {
             if (text.trim().isNotEmpty) {
               final updated = Map<String, dynamic>.from(task);
               updated['text'] = text;
-              await StorageService.insertTranscript(updated);
+              await StorageService.updateTranscriptByOrderId(task['orderId'], {'text': text});
               setState(() {
                 _task = updated;
               });
@@ -187,7 +187,14 @@ class _TranscribeTaskDetailPageState extends State<TranscribeTaskDetailPage> {
             SizedBox(height: 8),
             _querying
                 ? Row(children: [SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)), SizedBox(width: 8), Text('正在查询转写结果...')])
-                : SelectableText(_task!['text'] ?? ''),
+                : (( _task!['text'] == null || (_task!['text'] as String).trim().isEmpty )
+                    ? ElevatedButton.icon(
+                        icon: Icon(Icons.refresh),
+                        label: Text('刷新结果'),
+                        onPressed: _querying ? null : () => _queryTranscribeResult(_task!),
+                      )
+                    : SelectableText(_task!['text'] ?? '')
+                  ),
             SizedBox(height: 8),
             ElevatedButton.icon(
               icon: Icon(Icons.copy),

@@ -102,96 +102,94 @@ class _TextLibraryPageState extends State<TextLibraryPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('文本库')),
-      body: _loading
-          ? Center(child: CircularProgressIndicator())
-          : texts.isEmpty
-              ? ListView(
-                  children: [
-                    SizedBox(height: 120),
-                    Center(child: Text('暂无文本，快去录制并转写吧~', style: TextStyle(fontSize: 16, color: Colors.grey))),
-                  ],
-                )
-              : ListView.builder(
-                  itemCount: texts.length,
-                  itemBuilder: (context, index) {
-                    final t = texts[index];
-                    return Column(
-                      children: [
-                        ListTile(
-                          leading: Icon(Icons.description),
-                          title: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                t.text.length > 20 ? t.text.substring(0, 20) + '...' : t.text,
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              SizedBox(height: 4),
-                              Text(
-                                '创建时间: ${t.createdAt.toLocal()}',
-                                style: TextStyle(fontSize: 13, color: Colors.grey[700]),
-                              ),
-                              SizedBox(height: 8),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.end,
-                                children: [
-                                  TextButton(
-                                    onPressed: () async {
-                                      if (t.orderId == null || t.orderId!.isEmpty) {
-                                        showDialog(
-                                          context: context,
-                                          builder: (_) => AlertDialog(
-                                            title: Text('转写结果'),
-                                            content: Text('无orderId，无法查询'),
-                                            actions: [TextButton(onPressed: () => Navigator.pop(context), child: Text('关闭'))],
-                                          ),
-                                        );
-                                        return;
-                                      }
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) => TranscribeTaskDetailPage(orderId: t.orderId!),
-                                        ),
-                                      );
-                                    },
-                                    child: Text('查看结果'),
-                                  ),
-                                  IconButton(
-                                    icon: Icon(Icons.delete, color: Colors.red),
-                                    tooltip: '删除',
-                                    onPressed: () async {
-                                      final confirm = await showDialog<bool>(
+    return _loading
+        ? Center(child: CircularProgressIndicator())
+        : texts.isEmpty
+            ? ListView(
+                children: [
+                  SizedBox(height: 120),
+                  Center(child: Text('暂无文本，快去录制并转写吧~', style: TextStyle(fontSize: 16, color: Colors.grey))),
+                ],
+              )
+            : ListView.builder(
+                itemCount: texts.length,
+                itemBuilder: (context, index) {
+                  final t = texts[index];
+                  return Column(
+                    children: [
+                      ListTile(
+                        leading: Icon(Icons.description),
+                        title: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              t.text.length > 20 ? t.text.substring(0, 20) + '...' : (t.text.length > 0 ? t.text : '转换中...'),
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            SizedBox(height: 4),
+                            Text(
+                              '创建时间: ${t.createdAt.toLocal()}',
+                              style: TextStyle(fontSize: 13, color: Colors.grey[700]),
+                            ),
+                            SizedBox(height: 8),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                TextButton(
+                                  onPressed: () async {
+                                    if (t.orderId == null || t.orderId!.isEmpty) {
+                                      showDialog(
                                         context: context,
-                                        builder: (context) => AlertDialog(
-                                          title: Text('确认删除'),
-                                          content: Text('确定要删除该转写文本吗？'),
-                                          actions: [
-                                            TextButton(onPressed: () => Navigator.pop(context, false), child: Text('取消')),
-                                            TextButton(onPressed: () => Navigator.pop(context, true), child: Text('删除')),
-                                          ],
+                                        builder: (_) => AlertDialog(
+                                          title: Text('转写结果'),
+                                          content: Text('无orderId，无法查询'),
+                                          actions: [TextButton(onPressed: () => Navigator.pop(context), child: Text('关闭'))],
                                         ),
                                       );
-                                      if (confirm == true) {
-                                        await _deleteTranscript(t.id);
-                                      }
-                                    },
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
+                                      return;
+                                    }
+                                    await Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => TranscribeTaskDetailPage(orderId: t.orderId!),
+                                      ),
+                                    );
+                                    await _loadTexts();
+                                  },
+                                  child: Text('查看结果'),
+                                ),
+                                IconButton(
+                                  icon: Icon(Icons.delete, color: Colors.red),
+                                  tooltip: '删除',
+                                  onPressed: () async {
+                                    final confirm = await showDialog<bool>(
+                                      context: context,
+                                      builder: (context) => AlertDialog(
+                                        title: Text('确认删除'),
+                                        content: Text('确定要删除该转写文本吗？'),
+                                        actions: [
+                                          TextButton(onPressed: () => Navigator.pop(context, false), child: Text('取消')),
+                                          TextButton(onPressed: () => Navigator.pop(context, true), child: Text('删除')),
+                                        ],
+                                      ),
+                                    );
+                                    if (confirm == true) {
+                                      await _deleteTranscript(t.id);
+                                    }
+                                  },
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
-                        Divider(height: 1, thickness: 1, indent: 16, endIndent: 16),
-                      ],
-                    );
-                  },
-                ),
-    );
+                      ),
+                      Divider(height: 1, thickness: 1, indent: 16, endIndent: 16),
+                    ],
+                  );
+                },
+              );
   }
 
   Future<void> _deleteTranscript(String id) async {

@@ -35,16 +35,23 @@ class MainTabPageState extends State<MainTabPage> {
     TextLibraryPage(),
     SettingsPage(),
   ];
+  final _titles = ['录制', '录音列表', '文本库', '设置'];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _pages[currentIndex],
+      appBar: AppBar(title: Text(_titles[currentIndex])),
+      body: SafeArea(child: _pages[currentIndex]),
       bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
         currentIndex: currentIndex,
         selectedItemColor: Colors.deepOrange,
         unselectedItemColor: Colors.grey,
         showUnselectedLabels: true,
+        selectedLabelStyle: TextStyle(fontSize: 12, fontWeight: FontWeight.normal),
+        unselectedLabelStyle: TextStyle(fontSize: 12, fontWeight: FontWeight.normal),
+        selectedIconTheme: IconThemeData(size: 24),
+        unselectedIconTheme: IconThemeData(size: 24),
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.mic), label: '录制'),
           BottomNavigationBarItem(icon: Icon(Icons.list), label: '录音列表'),

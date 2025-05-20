@@ -168,139 +168,136 @@ class _RecordingsListPageState extends State<RecordingsListPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('录音列表')),
-      body: RefreshIndicator(
-        onRefresh: _loadRecordings,
-        child: _loading
-            ? Center(child: CircularProgressIndicator())
-            : recordings.isEmpty
-            ? ListView(
-                children: [
-                  SizedBox(height: 120),
-                  Center(child: Text('暂无录音，快去录制吧~', style: TextStyle(fontSize: 16, color: Colors.grey))),
-                ],
-              )
-            : ListView.builder(
-                itemCount: recordings.length,
-                itemBuilder: (context, index) {
-                  final rec = recordings[index];
-                      return Column(
+    return RefreshIndicator(
+      onRefresh: _loadRecordings,
+      child: _loading
+          ? Center(child: CircularProgressIndicator())
+          : recordings.isEmpty
+          ? ListView(
+              children: [
+                SizedBox(height: 120),
+                Center(child: Text('暂无录音，快去录制吧~', style: TextStyle(fontSize: 16, color: Colors.grey))),
+              ],
+            )
+          : ListView.builder(
+              itemCount: recordings.length,
+              itemBuilder: (context, index) {
+                final rec = recordings[index];
+                return Column(
+                  children: [
+                    ListTile(
+                      leading: Icon(Icons.audiotrack),
+                      title: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          ListTile(
-                    leading: Icon(Icons.audiotrack),
-                            title: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                          Text(
+                            rec.filePath.split('/').last,
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            '大小: \\${_formatSize(rec.size)}',
+                            style: TextStyle(fontSize: 13, color: Colors.grey[700]),
+                          ),
+                          Text(
+                            '时间: \\${_formatDateTime(rec.createdAt)}',
+                            style: TextStyle(fontSize: 13, color: Colors.grey[700]),
+                          ),
+                          SizedBox(height: 8),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              if (_playingIndex == index && _playerState?.playing == true)
+                                IconButton(
+                                  icon: Icon(Icons.pause),
+                                  tooltip: '暂停',
+                                  onPressed: _pauseRecording,
+                                )
+                              else if (_playingIndex == index && _playerState?.playing == false && _playerState?.processingState == ProcessingState.ready)
+                                IconButton(
+                                  icon: Icon(Icons.play_arrow),
+                                  tooltip: '继续播放',
+                                  onPressed: _resumeRecording,
+                                )
+                              else
+                                IconButton(
+                                  icon: Icon(Icons.play_arrow),
+                                  tooltip: '播放',
+                                  onPressed: () => _playRecording(rec, index),
+                                ),
+                              if (_playingIndex == index)
+                                IconButton(
+                                  icon: Icon(Icons.stop),
+                                  tooltip: '停止',
+                                  onPressed: _stopRecording,
+                                ),
+                              IconButton(
+                                icon: Icon(Icons.delete),
+                                tooltip: '删除',
+                                onPressed: () async {
+                                  final confirm = await showDialog<bool>(
+                                    context: context,
+                                    builder: (context) => AlertDialog(
+                                      title: Text('确认删除'),
+                                      content: Text('确定要删除该录音吗？'),
+                                      actions: [
+                                        TextButton(onPressed: () => Navigator.pop(context, false), child: Text('取消')),
+                                        TextButton(onPressed: () => Navigator.pop(context, true), child: Text('删除')),
+                                      ],
+                                    ),
+                                  );
+                                  if (confirm == true) {
+                                    await _deleteRecording(rec);
+                                  }
+                                },
+                              ),
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => SubmitTranscribeTaskPage(audioPath: rec.filePath),
+                                    ),
+                                  );
+                                },
+                                child: Text('转文字'),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      onTap: () => _playRecording(rec, index),
+                    ),
+                    if (_playingIndex == index && _duration != null)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        child: Column(
+                          children: [
+                            Slider(
+                              min: 0,
+                              max: _duration!.inMilliseconds.toDouble(),
+                              value: (_position?.inMilliseconds ?? 0).clamp(0, _duration!.inMilliseconds).toDouble(),
+                              onChanged: (v) async {
+                                await _player?.seek(Duration(milliseconds: v.toInt()));
+                              },
+                            ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Text(
-                                  rec.filePath.split('/').last,
-                                  style: TextStyle(fontWeight: FontWeight.bold),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                SizedBox(height: 4),
-                                Text(
-                                  '大小: ${_formatSize(rec.size)}',
-                                  style: TextStyle(fontSize: 13, color: Colors.grey[700]),
-                                ),
-                                Text(
-                                  '时间: ${_formatDateTime(rec.createdAt)}',
-                                  style: TextStyle(fontSize: 13, color: Colors.grey[700]),
-                                ),
-                                SizedBox(height: 8),
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.end,
-                                  children: [
-                                    if (_playingIndex == index && _playerState?.playing == true)
-                                      IconButton(
-                                        icon: Icon(Icons.pause),
-                                        tooltip: '暂停',
-                                        onPressed: _pauseRecording,
-                                      )
-                                    else if (_playingIndex == index && _playerState?.playing == false && _playerState?.processingState == ProcessingState.ready)
-                                      IconButton(
-                                        icon: Icon(Icons.play_arrow),
-                                        tooltip: '继续播放',
-                                        onPressed: _resumeRecording,
-                                      )
-                                    else
-                                      IconButton(
-                                        icon: Icon(Icons.play_arrow),
-                                        tooltip: '播放',
-                                        onPressed: () => _playRecording(rec, index),
-                                      ),
-                                    if (_playingIndex == index)
-                                      IconButton(
-                                        icon: Icon(Icons.stop),
-                                        tooltip: '停止',
-                                        onPressed: _stopRecording,
-                                      ),
-                                    IconButton(
-                                      icon: Icon(Icons.delete),
-                                      tooltip: '删除',
-                                      onPressed: () async {
-                                        final confirm = await showDialog<bool>(
-                                          context: context,
-                                          builder: (context) => AlertDialog(
-                                            title: Text('确认删除'),
-                                            content: Text('确定要删除该录音吗？'),
-                                            actions: [
-                                              TextButton(onPressed: () => Navigator.pop(context, false), child: Text('取消')),
-                                              TextButton(onPressed: () => Navigator.pop(context, true), child: Text('删除')),
-                                            ],
-                                          ),
-                                        );
-                                        if (confirm == true) {
-                                          await _deleteRecording(rec);
-                                        }
-                                      },
-                                    ),
-                                    TextButton(
-                                      onPressed: () {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) => SubmitTranscribeTaskPage(audioPath: rec.filePath),
-                                          ),
-                                        );
-                                      },
-                                      child: Text('转文字'),
-                                    ),
-                                  ],
-                                ),
+                                Text(_formatDateTime(rec.createdAt)),
+                                Text(_formatDateTime(rec.createdAt.add(_duration!))),
                               ],
                             ),
-                            onTap: () => _playRecording(rec, index),
-                          ),
-                          if (_playingIndex == index && _duration != null)
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                              child: Column(
-                                children: [
-                                  Slider(
-                                    min: 0,
-                                    max: _duration!.inMilliseconds.toDouble(),
-                                    value: (_position?.inMilliseconds ?? 0).clamp(0, _duration!.inMilliseconds).toDouble(),
-                                    onChanged: (v) async {
-                                      await _player?.seek(Duration(milliseconds: v.toInt()));
-                                    },
-                                  ),
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(_formatDateTime(rec.createdAt)),
-                                      Text(_formatDateTime(rec.createdAt.add(_duration!))),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                          Divider(height: 1, thickness: 1, indent: 16, endIndent: 16),
-                        ],
-                  );
-                },
-              ),
-      ),
+                          ],
+                        ),
+                      ),
+                    Divider(height: 1, thickness: 1, indent: 16, endIndent: 16),
+                  ],
+                );
+              },
+            ),
     );
   }
 } 

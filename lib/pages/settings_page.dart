@@ -39,46 +39,43 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('设置')),
-      body: _loading
-          ? Center(child: CircularProgressIndicator())
-          : Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('转文字API密钥', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                    SizedBox(height: 8),
-                    Text('当前APPID: \\n' + _appIdController.text, style: TextStyle(fontSize: 13, color: Colors.grey)),
-                    Text('当前SecretKey: \\n' + _secretKeyController.text, style: TextStyle(fontSize: 13, color: Colors.grey)),
-                    SizedBox(height: 24),
-                    TextFormField(
-                      controller: _appIdController,
-                      decoration: InputDecoration(labelText: 'APPID'),
-                      validator: (v) => v == null || v.trim().isEmpty ? '请输入APPID' : null,
+    return _loading
+        ? Center(child: CircularProgressIndicator())
+        : Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('转文字API密钥', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                  SizedBox(height: 8),
+                  Text('APPID: ' + _appIdController.text, style: TextStyle(fontSize: 13, color: Colors.grey)),
+                  Text('SecretKey: ' + _secretKeyController.text, style: TextStyle(fontSize: 13, color: Colors.grey)),
+                  SizedBox(height: 24),
+                  TextFormField(
+                    controller: _appIdController,
+                    decoration: InputDecoration(labelText: 'APPID'),
+                    validator: (v) => v == null || v.trim().isEmpty ? '请输入APPID' : null,
+                  ),
+                  SizedBox(height: 16),
+                  TextFormField(
+                    controller: _secretKeyController,
+                    decoration: InputDecoration(labelText: 'SecretKey'),
+                    validator: (v) => v == null || v.trim().isEmpty ? '请输入SecretKey' : null,
+                  ),
+                  SizedBox(height: 32),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _saveConfig,
+                      child: Text('保存'),
                     ),
-                    SizedBox(height: 16),
-                    TextFormField(
-                      controller: _secretKeyController,
-                      decoration: InputDecoration(labelText: 'SecretKey'),
-                      validator: (v) => v == null || v.trim().isEmpty ? '请输入SecretKey' : null,
-                    ),
-                    SizedBox(height: 32),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: _saveConfig,
-                        child: Text('保存'),
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
-    );
+          );
   }
 
   @override
