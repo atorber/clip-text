@@ -40,7 +40,7 @@ class _SettingsPageState extends State<SettingsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('设置')),
+      // appBar: AppBar(title: Text('转文字API密钥')),
       body: _loading
           ? Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
@@ -50,10 +50,9 @@ class _SettingsPageState extends State<SettingsPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('转文字API密钥', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
                     SizedBox(height: 8),
-                    Text('APPID: ' + _appIdController.text, style: TextStyle(fontSize: 13, color: Colors.grey)),
-                    Text('SecretKey: ' + _secretKeyController.text, style: TextStyle(fontSize: 13, color: Colors.grey)),
+                    Text('APPID: ${_appIdController.text.isEmpty ? '未设置' : _appIdController.text}', style: TextStyle(fontSize: 13, color: Colors.grey)),
+                    Text('SecretKey: ${_secretKeyController.text.isEmpty ? '未设置' : _secretKeyController.text}', style: TextStyle(fontSize: 13, color: Colors.grey)),
                     SizedBox(height: 24),
                     TextFormField(
                       controller: _appIdController,

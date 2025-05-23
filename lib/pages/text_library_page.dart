@@ -123,7 +123,7 @@ class _TextLibraryPageState extends State<TextLibraryPage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              t.text.length > 20 ? t.text.substring(0, 20) + '...' : (t.text.length > 0 ? t.text : '转换中...'),
+                              t.text.length > 20 ? '${t.text.substring(0, 20)}...' : (t.text.isNotEmpty ? t.text : '转换中...'),
                               style: TextStyle(fontWeight: FontWeight.bold),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,

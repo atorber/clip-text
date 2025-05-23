@@ -62,7 +62,7 @@ class _SubmitTranscribeTaskPageState extends State<SubmitTranscribeTaskPage> {
     if (d == null) return '--';
     final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
     final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
-    return '${d.inHours > 0 ? d.inHours.toString().padLeft(2, '0') + ':' : ''}$m:$s';
+    return '${d.inHours > 0 ? '${d.inHours.toString().padLeft(2, '0')}:' : ''}$m:$s';
   }
 
   // 讯飞录音文件转写API签名生成
@@ -195,8 +195,8 @@ class _SubmitTranscribeTaskPageState extends State<SubmitTranscribeTaskPage> {
                         );
                         // 步骤1：上传音频获取orderId
                         final orderId = await _uploadAudioFile(
-                          appId: appId!,
-                          secretKey: secretKey!,
+                          appId: appId,
+                          secretKey: secretKey,
                           audioPath: widget.audioPath,
                           duration: _duration?.inSeconds,
                         );
@@ -215,7 +215,7 @@ class _SubmitTranscribeTaskPageState extends State<SubmitTranscribeTaskPage> {
                           context: context,
                           builder: (_) => AlertDialog(
                             title: Text('上传成功'),
-                            content: Text('任务已提交，orderId: ' + orderId),
+                            content: Text('任务已提交，orderId: $orderId'),
                             actions: [
                               TextButton(
                                 onPressed: () {
