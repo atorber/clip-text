@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class StorageService {
   static const String _fileName = 'recordings.json';
   static const String _transcriptFileName = 'transcripts.json';
+  static const String _aiChatHistoryFileName = 'ai_chat_history.json';
 
   // 插入一条录音记录
   static Future<void> insertRecording(Map<String, dynamic> rec) async {
@@ -81,6 +82,28 @@ class StorageService {
     };
   }
 
+  // 保存ChatGPT API配置
+  static Future<void> saveChatGptApiConfig({
+    required String apiKey,
+    String? baseUrl,
+    String? model,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('chatgpt_api_key', apiKey);
+    await prefs.setString('chatgpt_base_url', baseUrl ?? 'https://api.openai.com');
+    await prefs.setString('chatgpt_model', model ?? 'gpt-3.5-turbo');
+  }
+
+  // 读取ChatGPT API配置
+  static Future<Map<String, String?>> getChatGptApiConfig() async {
+    final prefs = await SharedPreferences.getInstance();
+    return {
+      'apiKey': prefs.getString('chatgpt_api_key'),
+      'baseUrl': prefs.getString('chatgpt_base_url'),
+      'model': prefs.getString('chatgpt_model'),
+    };
+  }
+
   // 根据orderId查找转写任务
   static Future<Map<String, dynamic>?> getTranscriptByOrderId(String orderId) async {
     final transcripts = await getAllTranscripts();
@@ -108,5 +131,73 @@ class StorageService {
       list[idx].addAll(updateFields);
       await file.writeAsString(jsonEncode(list));
     }
+  }
+
+  // ==================== AI问答历史记录管理 ====================
+  
+  // 保存AI问答记录
+  static Future<void> saveAiChatHistory({
+    required String transcriptId,
+    required String question,
+    required String answer,
+    required String transcriptText,
+  }) async {
+    final file = await _getAiChatHistoryFile();
+    List<Map<String, dynamic>> history = await getAllAiChatHistory();
+    
+    final record = {
+      'id': DateTime.now().millisecondsSinceEpoch.toString(),
+      'transcriptId': transcriptId,
+      'question': question,
+      'answer': answer,
+      'transcriptText': transcriptText,
+      'timestamp': DateTime.now().toIso8601String(),
+    };
+    
+    history.add(record);
+    await file.writeAsString(jsonEncode(history));
+  }
+
+  // 获取所有AI问答历史记录
+  static Future<List<Map<String, dynamic>>> getAllAiChatHistory() async {
+    try {
+      final file = await _getAiChatHistoryFile();
+      if (!await file.exists()) {
+        return [];
+      }
+      String contents = await file.readAsString();
+      List<dynamic> jsonList = jsonDecode(contents);
+      return jsonList.cast<Map<String, dynamic>>();
+    } catch (e) {
+      return [];
+    }
+  }
+
+  // 根据转写ID获取相关的问答历史
+  static Future<List<Map<String, dynamic>>> getAiChatHistoryByTranscriptId(String transcriptId) async {
+    final allHistory = await getAllAiChatHistory();
+    return allHistory.where((record) => record['transcriptId'] == transcriptId).toList();
+  }
+
+  // 获取AI问答历史文件对象
+  static Future<File> _getAiChatHistoryFile() async {
+    final dir = await getApplicationDocumentsDirectory();
+    return File('${dir.path}/$_aiChatHistoryFileName');
+  }
+
+  // 根据ID删除问答记录
+  static Future<void> deleteAiChatHistoryById(String id) async {
+    final file = await _getAiChatHistoryFile();
+    final list = await getAllAiChatHistory();
+    list.removeWhere((e) => e['id'] == id);
+    await file.writeAsString(jsonEncode(list));
+  }
+
+  // 清空某个转写任务的所有问答历史
+  static Future<void> clearAiChatHistoryByTranscriptId(String transcriptId) async {
+    final file = await _getAiChatHistoryFile();
+    final list = await getAllAiChatHistory();
+    list.removeWhere((e) => e['transcriptId'] == transcriptId);
+    await file.writeAsString(jsonEncode(list));
   }
 } 
