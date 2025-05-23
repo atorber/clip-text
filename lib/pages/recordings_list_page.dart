@@ -5,6 +5,8 @@ import 'package:just_audio/just_audio.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'submit_transcribe_task_page.dart';
+import '../services/storage_service.dart';
+import 'transcribe_task_detail_page.dart';
 
 class RecordingsListPage extends StatefulWidget {
   @override
@@ -19,6 +21,9 @@ class _RecordingsListPageState extends State<RecordingsListPage> {
   PlayerState? _playerState;
   Duration? _duration;
   Duration? _position;
+  
+  // 存储录音文件路径到转写任务orderId的映射
+  Map<String, String> _transcriptionOrderIds = {};
 
   @override
   void initState() {
@@ -51,20 +56,41 @@ class _RecordingsListPageState extends State<RecordingsListPage> {
           .where((f) => f is File && p.extension(f.path).toLowerCase() == '.wav')
           .map((f) => File(f.path))
           .toList();
+      
+      final newRecordings = files
+          .map((f) => Recording(
+                id: p.basename(f.path),
+                filePath: f.path,
+                createdAt: f.statSync().modified,
+                size: f.lengthSync(),
+                sourceApp: null,
+              ))
+          .toList();
+      
+      // 检查每个录音是否有对应的转录任务
+      final allTranscripts = await StorageService.getAllTranscripts();
+      final newTranscriptionOrderIds = <String, String>{};
+      
+      for (final recording in newRecordings) {
+        // 查找使用相同音频文件路径且有转录文本的任务
+        for (final transcript in allTranscripts) {
+          if (transcript['recordingId'] == recording.filePath && 
+              transcript['text'] != null && 
+              (transcript['text'] as String).trim().isNotEmpty) {
+            newTranscriptionOrderIds[recording.filePath] = transcript['orderId'];
+            break;
+          }
+        }
+      }
+      
       setState(() {
-        recordings = files
-            .map((f) => Recording(
-                  id: p.basename(f.path),
-                  filePath: f.path,
-                  createdAt: f.statSync().modified,
-                  size: f.lengthSync(),
-                  sourceApp: null,
-                ))
-            .toList();
+        recordings = newRecordings;
+        _transcriptionOrderIds = newTranscriptionOrderIds;
       });
     } catch (e) {
       setState(() {
         recordings = [];
+        _transcriptionOrderIds = {};
       });
     } finally {
       setState(() => _loading = false);
@@ -264,6 +290,26 @@ class _RecordingsListPageState extends State<RecordingsListPage> {
                                 },
                                 child: Text('转文字'),
                               ),
+                              // 如果该录音已有转录文本，显示"查看文字"按钮
+                              if (_transcriptionOrderIds.containsKey(rec.filePath))
+                                TextButton(
+                                  onPressed: () {
+                                    final orderId = _transcriptionOrderIds[rec.filePath]!;
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => TranscribeTaskDetailPage(
+                                          orderId: orderId,
+                                          autoStartAiChat: false,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  child: Text('查看文字'),
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: Colors.green,
+                                  ),
+                                ),
                             ],
                           ),
                         ],

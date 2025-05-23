@@ -10,7 +10,8 @@ import 'dart:convert';
 
 class TranscribeTaskDetailPage extends StatefulWidget {
   final String orderId;
-  const TranscribeTaskDetailPage({Key? key, required this.orderId}) : super(key: key);
+  final bool autoStartAiChat; // 是否自动开启AI对话
+  const TranscribeTaskDetailPage({Key? key, required this.orderId, this.autoStartAiChat = false}) : super(key: key);
 
   @override
   State<TranscribeTaskDetailPage> createState() => _TranscribeTaskDetailPageState();
@@ -38,6 +39,19 @@ class _TranscribeTaskDetailPageState extends State<TranscribeTaskDetailPage> {
     super.initState();
     _player = AudioPlayer();
     _loadTask();
+    
+    // 如果设置了自动开启AI对话，则在加载完成后自动开启
+    if (widget.autoStartAiChat) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        setState(() {
+          _showAiChat = true;
+          // 自动收起转写文本以节省空间
+          _showTranscriptText = false;
+        });
+        // 检查API配置
+        _checkApiConfig();
+      });
+    }
   }
 
   Future<void> _loadTask() async {

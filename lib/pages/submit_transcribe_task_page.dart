@@ -237,7 +237,10 @@ class _SubmitTranscribeTaskPageState extends State<SubmitTranscribeTaskPage> {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (_) => TranscribeTaskDetailPage(orderId: orderId),
+                                      builder: (_) => TranscribeTaskDetailPage(
+                                        orderId: orderId,
+                                        autoStartAiChat: false,
+                                      ),
                                     ),
                                   );
                                 },

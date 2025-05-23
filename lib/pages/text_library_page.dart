@@ -153,13 +153,46 @@ class _TextLibraryPageState extends State<TextLibraryPage> {
                                     await Navigator.push(
                                       context,
                                       MaterialPageRoute(
-                                        builder: (_) => TranscribeTaskDetailPage(orderId: t.orderId!),
+                                        builder: (_) => TranscribeTaskDetailPage(
+                                          orderId: t.orderId!,
+                                          autoStartAiChat: false,
+                                        ),
                                       ),
                                     );
                                     await _loadTexts();
                                   },
                                   child: Text('查看结果'),
                                 ),
+                                if (t.text.trim().isNotEmpty)
+                                  TextButton(
+                                    onPressed: () async {
+                                      if (t.orderId == null || t.orderId!.isEmpty) {
+                                        showDialog(
+                                          context: context,
+                                          builder: (_) => AlertDialog(
+                                            title: Text('AI对话'),
+                                            content: Text('无orderId，无法进入AI对话'),
+                                            actions: [TextButton(onPressed: () => Navigator.pop(context), child: Text('关闭'))],
+                                          ),
+                                        );
+                                        return;
+                                      }
+                                      await Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => TranscribeTaskDetailPage(
+                                            orderId: t.orderId!,
+                                            autoStartAiChat: true,
+                                          ),
+                                        ),
+                                      );
+                                      await _loadTexts();
+                                    },
+                                    child: Text('AI对话'),
+                                    style: TextButton.styleFrom(
+                                      foregroundColor: Colors.blue,
+                                    ),
+                                  ),
                                 IconButton(
                                   icon: Icon(Icons.delete, color: Colors.red),
                                   tooltip: '删除',
