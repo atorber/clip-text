@@ -409,14 +409,18 @@ class _TranscribeTaskDetailPageState extends State<TranscribeTaskDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) return Scaffold(
-      appBar: AppBar(title: Text('转写详情')),
-      body: Center(child: CircularProgressIndicator()),
-    );
-    if (_task == null) return Scaffold(
-      appBar: AppBar(title: Text('转写详情')),
-      body: Center(child: Text('未找到任务')),
-    );
+    if (_loading) {
+      return Scaffold(
+        appBar: AppBar(title: Text('转写详情')),
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (_task == null) {
+      return Scaffold(
+        appBar: AppBar(title: Text('转写详情')),
+        body: Center(child: Text('未找到任务')),
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -433,7 +437,7 @@ class _TranscribeTaskDetailPageState extends State<TranscribeTaskDetailPage> {
               color: Colors.white,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.grey.withOpacity(0.1),
+                  color: Colors.grey.withValues(alpha: 0.1),
                   spreadRadius: 1,
                   blurRadius: 5,
                   offset: Offset(0, 2),
