@@ -110,13 +110,29 @@ flutter run
 flutter run -d <设备ID>
 ```
 
-### 4. 注意事项
+### 4. 构建Release版本
+
+使用提供的构建脚本可以自动构建并重命名APK文件：
+
+```bash
+./build_release.sh
+```
+
+或者手动构建：
+
+```bash
+flutter build apk --release
+```
+
+构建完成后，APK文件将位于 `build/app/outputs/flutter-apk/` 目录下，文件名格式为 `clip-text-版本号.apk`（如：`clip-text-0.1.0.apk`）。
+
+### 5. 注意事项
 - **权限**：首次运行时，应用会请求录音、投屏等权限，请务必全部允许。
 - **Android 14 及以上**：需在 `AndroidManifest.xml` 中声明 `android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION` 和 `android.permission.CAPTURE_VIDEO_OUTPUT`，本项目已配置。
 - **录音功能**：如需录制系统音频，需在真机或支持音频投屏的模拟器上运行，部分模拟器可能不支持。
 - **热重载/重启**：开发过程中可用 `r`（热重载）或 `R`（热重启）提升效率。
 
-### 5. 常用命令
+### 6. 常用命令
 
 - 清理构建缓存
   ```bash
