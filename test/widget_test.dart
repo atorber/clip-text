@@ -16,7 +16,8 @@ void main() {
     await tester.pumpWidget(MyApp());
 
     // Verify that the app starts with the record page
-    expect(find.text('录制'), findsOneWidget);
+    // There should be exactly 2 "录制" texts: one in AppBar title and one in BottomNavigationBar
+    expect(find.text('录制'), findsNWidgets(2));
     
     // Verify that bottom navigation bar is present
     expect(find.byType(BottomNavigationBar), findsOneWidget);
@@ -25,5 +26,8 @@ void main() {
     expect(find.text('录音列表'), findsOneWidget);
     expect(find.text('文本库'), findsOneWidget);
     expect(find.text('设置'), findsOneWidget);
+    
+    // Verify that AppBar is present with correct title
+    expect(find.byType(AppBar), findsOneWidget);
   });
 }
