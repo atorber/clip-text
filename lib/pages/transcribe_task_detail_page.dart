@@ -300,7 +300,7 @@ class _TranscribeTaskDetailPageState extends State<TranscribeTaskDetailPage> {
         _messages.add(aiMessage);
         _aiLoading = false;
       });
-
+      
       // 保存问答历史记录
       try {
         await StorageService.saveAiChatHistory(
@@ -313,7 +313,7 @@ class _TranscribeTaskDetailPageState extends State<TranscribeTaskDetailPage> {
       } catch (e) {
         print('[CHAT] 问答历史记录保存失败: $e');
       }
-
+      
       // 滚动到底部
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _scrollToBottom();
@@ -425,7 +425,24 @@ class _TranscribeTaskDetailPageState extends State<TranscribeTaskDetailPage> {
         elevation: 0,
       ),
       body: Column(
-        children: [
+          children: [
+          // 顶部功能栏
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.1),
+                  spreadRadius: 1,
+                  blurRadius: 5,
+                  offset: Offset(0, 2),
+                ),
+              ],
+            ),
+            child: _buildBottomActionBar(),
+          ),
+
           // 音频播放器区域（可折叠）
           if (_showAudioPlayer) ...[
             Container(
@@ -436,7 +453,7 @@ class _TranscribeTaskDetailPageState extends State<TranscribeTaskDetailPage> {
                 elevation: 2,
                 margin: EdgeInsets.zero,
                 child: Column(
-                  children: [
+              children: [
                     Padding(
                       padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                       child: Row(
@@ -462,22 +479,22 @@ class _TranscribeTaskDetailPageState extends State<TranscribeTaskDetailPage> {
                                     color: Colors.grey[600],
                                     fontSize: 13,
                                   ),
-                                ),
-                              ],
-                            ),
+                ),
+              ],
+            ),
                           ),
                           // 收起按钮
-                          IconButton(
+                  IconButton(
                             icon: Icon(Icons.keyboard_arrow_up, color: Colors.blue[700]),
-                            onPressed: () {
-                              setState(() {
+                    onPressed: () {
+                      setState(() {
                                 _showAudioPlayer = false;
-                              });
-                            },
+                      });
+                    },
                             tooltip: '收起音频播放器',
-                          ),
-                        ],
-                      ),
+                  ),
+              ],
+            ),
                     ),
                     // 音频控制按钮
                     if (_audioReady) ...[
@@ -485,10 +502,10 @@ class _TranscribeTaskDetailPageState extends State<TranscribeTaskDetailPage> {
                         padding: EdgeInsets.only(bottom: 12),
                         child: Container(
                           padding: EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                          decoration: BoxDecoration(
+                  decoration: BoxDecoration(
                             color: Colors.grey[50],
                             borderRadius: BorderRadius.circular(25),
-                          ),
+                  ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
@@ -506,7 +523,7 @@ class _TranscribeTaskDetailPageState extends State<TranscribeTaskDetailPage> {
                                 icon: Icon(Icons.stop, color: Colors.red[700]),
                                 onPressed: () => _player.stop(),
                                 tooltip: '停止',
-                              ),
+                ),
                             ],
                           ),
                         ),
@@ -522,45 +539,27 @@ class _TranscribeTaskDetailPageState extends State<TranscribeTaskDetailPage> {
                             border: Border.all(color: Colors.red[200]!),
                           ),
                           child: Row(
-                            children: [
+                    children: [
                               Icon(Icons.error_outline, color: Colors.red[700], size: 20),
                               SizedBox(width: 8),
-                              Text(
+                      Text(
                                 '音频文件不可用',
                                 style: TextStyle(color: Colors.red[700], fontSize: 14),
-                              ),
-                            ],
-                          ),
-                        ),
                       ),
+                            ],
+                              ),
+                            ),
+                          ),
                     ],
                   ],
-                ),
-              ),
-            ),
+                              ),
+                            ),
+                          ),
           ],
 
           // 主内容区域
-          Expanded(
+                          Expanded(
             child: _showAiChat ? _buildChatInterface() : _buildTranscriptInterface(),
-          ),
-
-          // 底部功能栏
-          Container(
-            margin: EdgeInsets.only(bottom: _showAiChat ? 8 : 0),
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withOpacity(0.1),
-                  spreadRadius: 1,
-                  blurRadius: 5,
-                  offset: Offset(0, -2),
-                ),
-              ],
-            ),
-            child: _buildBottomActionBar(),
           ),
         ],
       ),
@@ -571,28 +570,28 @@ class _TranscribeTaskDetailPageState extends State<TranscribeTaskDetailPage> {
   Widget _buildTranscriptInterface() {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Column(
+                          child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+                            children: [
           // 转写状态指示器
-          Container(
+                              Container(
             padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
+                                decoration: BoxDecoration(
               color: _hasTranscriptText() ? Colors.green[50] : Colors.orange[50],
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
                 color: _hasTranscriptText() ? Colors.green[200]! : Colors.orange[200]!,
               ),
-            ),
-            child: Row(
+                                ),
+                                child: Row(
               mainAxisSize: MainAxisSize.min,
-              children: [
+                                  children: [
                 Icon(
                   _hasTranscriptText() ? Icons.check_circle : Icons.pending,
                   size: 16,
                   color: _hasTranscriptText() ? Colors.green[700] : Colors.orange[700],
                 ),
-                SizedBox(width: 8),
+                                    SizedBox(width: 8),
                 Text(
                   _hasTranscriptText() ? '转写完成' : '转写中...',
                   style: TextStyle(
@@ -600,14 +599,14 @@ class _TranscribeTaskDetailPageState extends State<TranscribeTaskDetailPage> {
                     fontWeight: FontWeight.w500,
                     fontSize: 14,
                   ),
-                ),
-              ],
-            ),
-          ),
+                                      ),
+                                  ],
+                                ),
+                              ),
           SizedBox(height: 12),
 
           // 转写内容区域
-          Expanded(
+                              Expanded(
             child: Container(
               width: double.infinity,
               decoration: BoxDecoration(
@@ -630,10 +629,10 @@ class _TranscribeTaskDetailPageState extends State<TranscribeTaskDetailPage> {
                   ? Padding(
                       padding: EdgeInsets.all(16),
                       child: SingleChildScrollView(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                                  Text(
                               '转写内容',
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
@@ -649,17 +648,17 @@ class _TranscribeTaskDetailPageState extends State<TranscribeTaskDetailPage> {
                                 height: 1.6,
                                 color: Colors.grey[800],
                               ),
-                            ),
-                          ],
-                        ),
+                                                  ),
+                                                ],
+                                              ),
                       ),
                     )
                   : Padding(
                       padding: EdgeInsets.all(16),
                       child: Center(
-                        child: Column(
+                                                        child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
+                                                          children: [
                             Icon(Icons.description_outlined, size: 64, color: Colors.grey[400]),
                             SizedBox(height: 16),
                             Text(
@@ -668,9 +667,9 @@ class _TranscribeTaskDetailPageState extends State<TranscribeTaskDetailPage> {
                                 fontSize: 16,
                                 color: Colors.grey[600],
                                 fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            SizedBox(height: 8),
+                                                              ),
+                                                            ),
+                                                            SizedBox(height: 8),
                             Text(
                               '点击下方刷新按钮重新获取',
                               style: TextStyle(
@@ -687,17 +686,17 @@ class _TranscribeTaskDetailPageState extends State<TranscribeTaskDetailPage> {
                                 backgroundColor: Colors.blue,
                                 foregroundColor: Colors.white,
                                 padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ),
                     ),
-            ),
-          ),
-        ],
-      ),
-    );
+                                                        ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  );
   }
 
   // 构建聊天界面
@@ -711,17 +710,17 @@ class _TranscribeTaskDetailPageState extends State<TranscribeTaskDetailPage> {
           // 聊天标题栏
           Container(
             padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: Colors.blue[50],
-            ),
-            child: Row(
-              children: [
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.blue[50],
+                                                  ),
+                                                  child: Row(
+                                                    children: [
                 Icon(Icons.smart_toy, color: Colors.blue[700], size: 24),
                 SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+                                                      Expanded(
+                                                        child: Column(
+                                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                                          children: [
                       Text(
                         'AI智能对话',
                         style: TextStyle(
@@ -729,38 +728,38 @@ class _TranscribeTaskDetailPageState extends State<TranscribeTaskDetailPage> {
                           fontSize: 16,
                           color: Colors.blue[800],
                         ),
-                      ),
+                                                              ),
                       Text(
                         '${_messages.length ~/ 2}轮对话',
                         style: TextStyle(
                           color: Colors.blue[600],
                           fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ),
                 // 功能按钮
                 IconButton(
                   icon: Icon(Icons.refresh, color: Colors.blue[700]),
                   onPressed: _loadChatHistoryToMessages,
                   tooltip: '刷新历史',
-                ),
+                                                        ),
                 IconButton(
                   icon: Icon(Icons.clear_all, color: Colors.blue[700]),
-                  onPressed: () {
+                                                          onPressed: () {
                     setState(() {
                       _messages.clear();
                     });
-                  },
+                                                          },
                   tooltip: '清空对话',
-                ),
-              ],
-            ),
+                                                        ),
+                                                      ],
+                                                    ),
           ),
 
           // 聊天消息区域
-          Expanded(
+                                                      Expanded(
             child: _messages.isEmpty
               ? Center(
                   child: Column(
@@ -774,18 +773,18 @@ class _TranscribeTaskDetailPageState extends State<TranscribeTaskDetailPage> {
                           fontSize: 18,
                           fontWeight: FontWeight.w500,
                           color: Colors.grey[600],
-                        ),
-                      ),
+                                                        ),
+                                                      ),
                       SizedBox(height: 8),
                       Text(
                         '向AI提问关于这段录音的任何问题',
                         style: TextStyle(
                           fontSize: 14,
                           color: Colors.grey[500],
-                        ),
-                      ),
-                    ],
-                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
                 )
               : ListView.builder(
                   controller: _scrollController,
@@ -796,16 +795,16 @@ class _TranscribeTaskDetailPageState extends State<TranscribeTaskDetailPage> {
                       return _buildTypingIndicator();
                     }
                     return _buildMessageBubble(_messages[index]);
-                  },
-                ),
-          ),
+                                      },
+                                    ),
+                              ),
 
           // 消息输入区域
           Container(
             padding: EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: Colors.grey[50],
-            ),
+                          ),
             child: Row(
               children: [
                 Expanded(
@@ -817,13 +816,13 @@ class _TranscribeTaskDetailPageState extends State<TranscribeTaskDetailPage> {
                     ),
                     child: TextField(
                       controller: _messageController,
-                      decoration: InputDecoration(
+                        decoration: InputDecoration(
                         hintText: '输入您的问题...',
                         border: InputBorder.none,
                         contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      ),
+                        ),
                       maxLines: null,
-                      enabled: !_aiLoading,
+                        enabled: !_aiLoading,
                       onSubmitted: (value) {
                         if (!_aiLoading && value.trim().isNotEmpty) {
                           _sendChatMessage();
@@ -831,7 +830,7 @@ class _TranscribeTaskDetailPageState extends State<TranscribeTaskDetailPage> {
                       },
                     ),
                   ),
-                ),
+                      ),
                 SizedBox(width: 12),
                 Container(
                   width: 48,
@@ -841,7 +840,7 @@ class _TranscribeTaskDetailPageState extends State<TranscribeTaskDetailPage> {
                     borderRadius: BorderRadius.circular(24),
                   ),
                   child: IconButton(
-                    icon: _aiLoading 
+                              icon: _aiLoading 
                       ? SizedBox(
                           width: 20,
                           height: 20,
@@ -853,9 +852,9 @@ class _TranscribeTaskDetailPageState extends State<TranscribeTaskDetailPage> {
                       : Icon(Icons.send, color: Colors.white),
                     onPressed: _aiLoading ? null : _sendChatMessage,
                   ),
-                ),
-              ],
-            ),
+                          ),
+                        ],
+                      ),
           ),
         ],
       ),
@@ -865,21 +864,21 @@ class _TranscribeTaskDetailPageState extends State<TranscribeTaskDetailPage> {
   // 构建底部操作栏
   Widget _buildBottomActionBar() {
     return Row(
-      children: [
+                          children: [
         // 音频播放器按钮（仅在隐藏时显示）
         if (!_showAudioPlayer) ...[
           Container(
             decoration: BoxDecoration(
               color: Colors.blue[50],
               borderRadius: BorderRadius.circular(8),
-            ),
+                            ),
             child: IconButton(
               icon: Icon(Icons.audiotrack, color: Colors.blue[700]),
-              onPressed: () {
-                setState(() {
+                              onPressed: () {
+                                setState(() {
                   _showAudioPlayer = true;
-                });
-              },
+                                });
+                              },
               tooltip: '显示音频播放器',
             ),
           ),
@@ -889,7 +888,7 @@ class _TranscribeTaskDetailPageState extends State<TranscribeTaskDetailPage> {
         Expanded(
           child: ElevatedButton.icon(
             icon: Icon(_showAiChat ? Icons.description : Icons.description_outlined),
-            label: Text('转写文本'),
+            label: Text('原文本'),
             onPressed: () {
               setState(() {
                 _showAiChat = false;
@@ -903,7 +902,7 @@ class _TranscribeTaskDetailPageState extends State<TranscribeTaskDetailPage> {
               elevation: _showAiChat ? 0 : 2,
             ),
           ),
-        ),
+                        ),
         SizedBox(width: 12),
         // AI对话按钮
         Expanded(
@@ -921,10 +920,10 @@ class _TranscribeTaskDetailPageState extends State<TranscribeTaskDetailPage> {
         ),
         SizedBox(width: 12),
         // 复制按钮
-        Container(
-          decoration: BoxDecoration(
+                        Container(
+                          decoration: BoxDecoration(
             color: Colors.green[50],
-            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(8),
           ),
           child: IconButton(
             icon: Icon(Icons.copy, color: Colors.green[700]),
@@ -990,100 +989,100 @@ class _TranscribeTaskDetailPageState extends State<TranscribeTaskDetailPage> {
                   // 消息内容
                   SelectionArea(
                     child: message.isMarkdown && !message.isUser
-                      ? MarkdownBlock(
+                              ? MarkdownBlock(
                           data: message.content,
-                          config: MarkdownConfig(
-                            configs: [
-                              PConfig(
+                                  config: MarkdownConfig(
+                                    configs: [
+                                      PConfig(
                                 textStyle: TextStyle(
                                   fontSize: 14, 
                                   height: 1.5,
                                   color: message.isUser ? Colors.white : Colors.black87,
-                                ),
+                                      ),
                               ),
-                              PreConfig(
-                                textStyle: const TextStyle(
-                                  fontFamily: 'monospace',
-                                  fontSize: 13,
-                                  color: Colors.green,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.grey[200],
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                padding: const EdgeInsets.all(8),
-                              ),
-                              H1Config(
+                                      PreConfig(
+                                        textStyle: const TextStyle(
+                                          fontFamily: 'monospace',
+                                          fontSize: 13,
+                                          color: Colors.green,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.grey[200],
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                        padding: const EdgeInsets.all(8),
+                                      ),
+                                      H1Config(
                                 style: TextStyle(
                                   fontSize: 18,
-                                  fontWeight: FontWeight.bold,
+                                          fontWeight: FontWeight.bold,
                                   color: message.isUser ? Colors.white : Colors.black87,
-                                ),
-                              ),
-                              H2Config(
+                                        ),
+                                      ),
+                                      H2Config(
                                 style: TextStyle(
                                   fontSize: 16,
-                                  fontWeight: FontWeight.bold,
+                                          fontWeight: FontWeight.bold,
                                   color: message.isUser ? Colors.white : Colors.black87,
-                                ),
-                              ),
-                              H3Config(
+                                        ),
+                                      ),
+                                      H3Config(
                                 style: TextStyle(
                                   fontSize: 15,
-                                  fontWeight: FontWeight.bold,
+                                          fontWeight: FontWeight.bold,
                                   color: message.isUser ? Colors.white : Colors.black87,
-                                ),
-                              ),
-                            ],
-                          ),
-                        )
-                      : Text(
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                )
+                              : Text(
                           message.content,
                           style: TextStyle(
                             fontSize: 14,
                             height: 1.5,
                             color: message.isUser ? Colors.white : Colors.black87,
+                                ),
                           ),
                         ),
-                  ),
-                  SizedBox(height: 8),
+                        SizedBox(height: 8),
                   // 时间戳和操作按钮
-                  Row(
+                        Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
+                          children: [
                       Text(
                         '${message.timestamp.hour.toString().padLeft(2, '0')}:${message.timestamp.minute.toString().padLeft(2, '0')}',
                         style: TextStyle(
                           fontSize: 11,
                           color: message.isUser ? Colors.white70 : Colors.grey[600],
-                        ),
-                      ),
+                                ),
+                              ),
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           GestureDetector(
                             onTap: () {
                               Clipboard.setData(ClipboardData(text: message.content));
-                              ScaffoldMessenger.of(context).showSnackBar(
+                                ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   content: Text('消息已复制到剪贴板'),
                                   duration: Duration(seconds: 1),
                                 ),
-                              );
-                            },
+                                );
+                              },
                             child: Icon(
                               Icons.copy,
                               size: 14,
                               color: message.isUser ? Colors.white70 : Colors.grey[600],
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
+                          ],
+                        ),
+                      ],
+                  ),
                     ],
                   ),
-                ],
-              ),
-            ),
+                ),
           ),
           if (message.isUser) ...[
             SizedBox(width: 8),
@@ -1096,9 +1095,9 @@ class _TranscribeTaskDetailPageState extends State<TranscribeTaskDetailPage> {
                 borderRadius: BorderRadius.circular(18),
               ),
               child: Icon(Icons.person, color: Colors.green[700], size: 20),
-            ),
+              ),
+            ],
           ],
-        ],
       ),
     );
   }
