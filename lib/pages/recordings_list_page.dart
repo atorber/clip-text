@@ -103,7 +103,10 @@ class _RecordingsListPageState extends State<RecordingsListPage> {
       if (await file.exists()) {
         await file.delete();
       }
-    } catch (e) {}
+    } catch (e) {
+      // 忽略删除文件的错误
+      print('删除录音文件失败: $e');
+    }
     await _loadRecordings();
   }
 
@@ -146,18 +149,20 @@ class _RecordingsListPageState extends State<RecordingsListPage> {
       await player.setFilePath(rec.filePath);
       await player.play();
     } catch (e) {
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text('播放失败'),
-          content: Text('无法播放该录音文件。'),
-          actions: [TextButton(onPressed: () => Navigator.pop(context), child: Text('确定'))],
-        ),
-      );
-      setState(() {
-        _player = null;
-        _playingIndex = null;
-      });
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text('播放失败'),
+            content: Text('无法播放该录音文件。'),
+            actions: [TextButton(onPressed: () => Navigator.pop(context), child: Text('确定'))],
+          ),
+        );
+        setState(() {
+          _player = null;
+          _playingIndex = null;
+        });
+      }
     }
   }
 

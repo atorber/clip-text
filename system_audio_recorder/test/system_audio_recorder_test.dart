@@ -10,6 +10,15 @@ class MockSystemAudioRecorderPlatform
 
   @override
   Future<String?> getPlatformVersion() => Future.value('42');
+
+  @override
+  Future<List<Map<String, dynamic>>> listRecordings() => Future.value([]);
+
+  @override
+  Future<void> startFloatingRecorder() => Future.value();
+
+  @override
+  Future<void> stopFloatingRecorder() => Future.value();
 }
 
 void main() {

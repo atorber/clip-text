@@ -71,6 +71,7 @@ class _RecordPageState extends State<RecordPage> {
     // 删除原始PCM文件
     await newFile.delete();
     // 弹窗询问后续操作
+    if (!mounted) return;
     final action = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
@@ -88,6 +89,7 @@ class _RecordPageState extends State<RecordPage> {
         ],
       ),
     );
+    if (!mounted) return;
     if (action == 'list') {
       final mainTabState = context.findAncestorStateOfType<MainTabPageState>();
       if (mainTabState != null && mainTabState.mounted) {
@@ -137,6 +139,7 @@ class _RecordPageState extends State<RecordPage> {
 
       if (path != null) {
         // 先询问是否保存
+        if (!mounted) return;
         final save = await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
@@ -160,7 +163,10 @@ class _RecordPageState extends State<RecordPage> {
           // 不保存，删除临时文件
           try {
             await File(path).delete();
-          } catch (e) {}
+          } catch (e) {
+            // 忽略删除临时文件的错误
+            print('删除临时文件失败: $e');
+          }
         }
       }
     }
@@ -178,6 +184,7 @@ class _RecordPageState extends State<RecordPage> {
         if (isRecording) {
           setState(() => isRecording = false);
           _stopTimer();
+          if (!mounted) return;
           final save = await showDialog<bool>(
             context: context,
             builder: (context) => AlertDialog(
@@ -203,7 +210,10 @@ class _RecordPageState extends State<RecordPage> {
             if (recordPath != null) {
               try {
                 await File(recordPath!).delete();
-              } catch (e) {}
+              } catch (e) {
+                // 忽略删除临时文件的错误
+                print('删除临时文件失败: $e');
+              }
               recordPath = null;
             }
           }
