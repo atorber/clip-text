@@ -109,7 +109,7 @@ jobs:
           files: build/app/outputs/flutter-apk/clip-text-flutter-${{ steps.version.outputs.version }}.apk
           tag_name: ${{ github.event.release.tag_name }}
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GIT_TOKEN }}
 
       # Backup upload method using GitHub CLI
       - name: Upload APK using GitHub CLI (backup)
@@ -117,4 +117,4 @@ jobs:
         run: |
           gh release upload ${{ github.event.release.tag_name }} build/app/outputs/flutter-apk/clip-text-flutter-${{ steps.version.outputs.version }}.apk --clobber
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GIT_TOKEN }}
