@@ -310,10 +310,10 @@ class _RecordingsListPageState extends State<RecordingsListPage> {
                                       ),
                                     );
                                   },
-                                  child: Text('查看文字'),
                                   style: TextButton.styleFrom(
                                     foregroundColor: Colors.green,
                                   ),
+                                  child: Text('查看文字'),
                                 ),
                             ],
                           ),

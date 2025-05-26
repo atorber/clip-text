@@ -140,10 +140,10 @@ class _TextLibraryPageState extends State<TextLibraryPage> {
                                       );
                                       await _loadTexts();
                                     },
-                                    child: Text('AI对话'),
                                     style: TextButton.styleFrom(
                                       foregroundColor: Colors.blue,
                                     ),
+                                    child: Text('AI对话'),
                                   ),
                                 IconButton(
                                   icon: Icon(Icons.delete, color: Colors.red),
