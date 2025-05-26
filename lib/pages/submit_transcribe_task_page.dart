@@ -114,7 +114,110 @@ class _SubmitTranscribeTaskPageState extends State<SubmitTranscribeTaskPage> {
     }
   }
 
-
+  Future<void> _submitTranscribeTask() async {
+    final config = await StorageService.getTranscribeApiConfig();
+    final appId = config['appId']?.trim();
+    final secretKey = config['secretKey']?.trim();
+    if (appId == null || appId.isEmpty || secretKey == null || secretKey.isEmpty) {
+      if (!mounted) return;
+      final goSetting = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text('未设置API信息'),
+          content: Text('请先在设置中填写转文字API的APPID和SecretKey'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context, false), child: Text('取消')),
+            TextButton(onPressed: () => Navigator.pop(context, true), child: Text('去设置')),
+          ],
+        ),
+      );
+      if (!mounted) return;
+      if (goSetting == true) {
+        Navigator.push(context, MaterialPageRoute(builder: (_) => SettingsPage()));
+      }
+      return;
+    }
+    try {
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => Center(child: CircularProgressIndicator()),
+      );
+      // 步骤1：上传音频获取orderId
+      final orderId = await _uploadAudioFile(
+        appId: appId,
+        secretKey: secretKey,
+        audioPath: widget.audioPath,
+        duration: _duration?.inSeconds,
+      );
+      // 步骤2：轮询获取转写结果（可选，后续实现）
+      // 保存转写任务到文本库，初始text为空
+      final transcript = {
+        'id': DateTime.now().millisecondsSinceEpoch.toString(),
+        'recordingId': widget.audioPath,
+        'text': '',
+        'createdAt': DateTime.now().toIso8601String(),
+        'orderId': orderId,
+      };
+      await StorageService.insertTranscript(transcript);
+      if (!mounted) return;
+      Navigator.pop(context); // 关闭loading
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: Text('上传成功'),
+          content: Text('任务已提交，orderId: $orderId'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context); // 关闭弹窗
+                Navigator.of(context).pop(); // 返回上一页
+                // 跳转到文本库tab页
+                final mainTabState = context.findAncestorStateOfType<MainTabPageState>();
+                if (mainTabState != null && mainTabState.mounted) {
+                  mainTabState.setState(() {
+                    mainTabState.currentIndex = 2; // 文本库tab索引
+                  });
+                }
+              },
+              child: Text('确定'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context); // 关闭弹窗
+                if (mounted) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => TranscribeTaskDetailPage(
+                        orderId: orderId,
+                        autoStartAiChat: false,
+                      ),
+                    ),
+                  );
+                }
+              },
+              child: Text('查看结果'),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      Navigator.pop(context); // 关闭loading
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: Text('转写失败'),
+          content: Text(e.toString()),
+          actions: [TextButton(onPressed: () => Navigator.pop(context), child: Text('确定'))],
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -136,107 +239,7 @@ class _SubmitTranscribeTaskPageState extends State<SubmitTranscribeTaskPage> {
                   Text('音频时长：${_formatDuration(_duration)}'),
                   SizedBox(height: 32),
                   ElevatedButton(
-                    onPressed: () async {
-                      final config = await StorageService.getTranscribeApiConfig();
-                      final appId = config['appId']?.trim();
-                      final secretKey = config['secretKey']?.trim();
-                      if (appId == null || appId.isEmpty || secretKey == null || secretKey.isEmpty) {
-                        final goSetting = await showDialog<bool>(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            title: Text('未设置API信息'),
-                            content: Text('请先在设置中填写转文字API的APPID和SecretKey'),
-                            actions: [
-                              TextButton(onPressed: () => Navigator.pop(context, false), child: Text('取消')),
-                              TextButton(onPressed: () => Navigator.pop(context, true), child: Text('去设置')),
-                            ],
-                          ),
-                        );
-                        if (goSetting == true && mounted) {
-                          Navigator.push(context, MaterialPageRoute(builder: (_) => SettingsPage()));
-                        }
-                        return;
-                      }
-                      try {
-                        if (!mounted) return;
-                        showDialog(
-                          context: context,
-                          barrierDismissible: false,
-                          builder: (_) => Center(child: CircularProgressIndicator()),
-                        );
-                        // 步骤1：上传音频获取orderId
-                        final orderId = await _uploadAudioFile(
-                          appId: appId,
-                          secretKey: secretKey,
-                          audioPath: widget.audioPath,
-                          duration: _duration?.inSeconds,
-                        );
-                        // 步骤2：轮询获取转写结果（可选，后续实现）
-                        // 保存转写任务到文本库，初始text为空
-                        final transcript = {
-                          'id': DateTime.now().millisecondsSinceEpoch.toString(),
-                          'recordingId': widget.audioPath,
-                          'text': '',
-                          'createdAt': DateTime.now().toIso8601String(),
-                          'orderId': orderId,
-                        };
-                        await StorageService.insertTranscript(transcript);
-                        if (!mounted) return;
-                        Navigator.pop(context); // 关闭loading
-                        showDialog(
-                          context: context,
-                          builder: (_) => AlertDialog(
-                            title: Text('上传成功'),
-                            content: Text('任务已提交，orderId: $orderId'),
-                            actions: [
-                              TextButton(
-                                onPressed: () {
-                                  Navigator.pop(context); // 关闭弹窗
-                                  Navigator.of(context).pop(); // 返回上一页
-                                  // 跳转到文本库tab页
-                                  final mainTabState = context.findAncestorStateOfType<MainTabPageState>();
-                                  if (mainTabState != null && mainTabState.mounted) {
-                                    mainTabState.setState(() {
-                                      mainTabState.currentIndex = 2; // 文本库tab索引
-                                    });
-                                  }
-                                },
-                                child: Text('确定'),
-                              ),
-                              TextButton(
-                                onPressed: () {
-                                  Navigator.pop(context); // 关闭弹窗
-                                  if (mounted) {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => TranscribeTaskDetailPage(
-                                          orderId: orderId,
-                                          autoStartAiChat: false,
-                                        ),
-                                      ),
-                                    );
-                                  }
-                                },
-                                child: Text('查看结果'),
-                              ),
-                            ],
-                          ),
-                        );
-                      } catch (e) {
-                        if (mounted) {
-                          Navigator.pop(context); // 关闭loading
-                          showDialog(
-                            context: context,
-                            builder: (_) => AlertDialog(
-                              title: Text('转写失败'),
-                              content: Text(e.toString()),
-                              actions: [TextButton(onPressed: () => Navigator.pop(context), child: Text('确定'))],
-                            ),
-                          );
-                        }
-                      }
-                    },
+                    onPressed: _submitTranscribeTask,
                     child: Text('提交转写任务'),
                   ),
                 ],

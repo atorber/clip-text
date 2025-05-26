@@ -46,6 +46,10 @@ class _SettingsPageState extends State<SettingsPage> {
       model: _chatGptModelController.text.trim().isEmpty ? null : _chatGptModelController.text.trim(),
     );
     setState(() => _loading = false);
+    
+    // 检查widget是否仍然挂载
+    if (!mounted) return;
+    
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('保存成功')));
   }
 

@@ -176,30 +176,40 @@ class _TranscribeTaskDetailPageState extends State<TranscribeTaskDetailPage> {
             }
           } else {
             // 结果为空
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('暂无结果，请稍后刷新')),
-            );
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('暂无结果，请稍后刷新')),
+              );
+            }
           }
         } else if (json['code'] == '26620') {
           // 任务未完成
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('任务未完成，请稍后再试')),
-          );
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('任务未完成，请稍后再试')),
+            );
+          }
         } else {
           // 其他错误
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('查询失败: \\${json['descInfo'] ?? json['failed'] ?? json['desc']}')),
-          );
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('查询失败: \\${json['descInfo'] ?? json['failed'] ?? json['desc']}')),
+            );
+          }
         }
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('HTTP错误: \\${response.statusCode}')),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('HTTP错误: \\${response.statusCode}')),
+          );
+        }
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('查询异常: \\${e.toString()}')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('查询异常: \\${e.toString()}')),
+        );
+      }
     } finally {
       setState(() { _querying = false; });
     }
@@ -328,6 +338,9 @@ class _TranscribeTaskDetailPageState extends State<TranscribeTaskDetailPage> {
         _aiLoading = false;
       });
       
+      // 检查widget是否仍然挂载
+      if (!mounted) return;
+      
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('AI对话失败: ${e.toString()}')),
       );
@@ -376,6 +389,9 @@ class _TranscribeTaskDetailPageState extends State<TranscribeTaskDetailPage> {
       print('[CONFIG] Base URL: $baseUrl');
       print('[CONFIG] Model: $model');
       print('[CONFIG] ================================================');
+      
+      // 检查widget是否仍然挂载
+      if (!mounted) return;
       
       if (apiKey == null || apiKey.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
