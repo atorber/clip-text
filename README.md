@@ -1,19 +1,33 @@
-# cliptext
+# ClipText
 
-A new Flutter project.
+一个安卓音频、视频声音内录转文字APP。转换的文本可以进一步与AI进行对话，直接生成总结、分析、提取要点等。
 
-## Getting Started
+亦可以作为学习使用dart开发简单应用的模板案例，代码百分百使用cursor自动生成。
 
-This project is a starting point for a Flutter application.
+## 功能简介
 
-A few resources to get you started if this is your first Flutter project:
+### 1. 录音
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+<img src="./docs/images/1-0.jpg" alt="录制" height="400">
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+### 2. 录音列表
+
+<div style="display: flex; gap: 20px; flex-wrap: wrap;">
+  <img src="./docs/images/2-0.jpg" alt="录制列表" height="400">
+  <img src="./docs/images/2-1.jpg" alt="转文字" height="400">
+</div>
+
+### 3. 文本库
+
+<div style="display: flex; gap: 20px; flex-wrap: wrap;">
+  <img src="./docs/images/3-0.jpg" alt="文本库" height="400">
+  <img src="./docs/images/3-1.jpg" alt="查看文本原文" height="400">
+  <img src="./docs/images/3-2.jpg" alt="AI对话" height="400">
+</div>
+
+### 4. 设置
+
+<img src="./docs/images/4-0.jpg" alt="设置" height="400">
 
 ## 运行与调试
 
