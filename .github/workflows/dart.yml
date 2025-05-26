@@ -17,6 +17,8 @@ permissions:
   contents: write
   packages: write
   actions: write
+  pull-requests: write
+  issues: write
 
 jobs:
   test:
@@ -95,13 +97,24 @@ jobs:
           VERSION=$(grep '^version:' pubspec.yaml | cut -d ' ' -f 2 | tr -d '\r')
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
+      # Rename APK file
+      - name: Rename APK file
+        run: |
+          mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/clip-text-flutter-${{ steps.version.outputs.version }}.apk
+
       # Upload APK to release
       - name: Upload APK to Release
-        uses: actions/upload-release-asset@v1
+        uses: softprops/action-gh-release@v1
+        with:
+          files: build/app/outputs/flutter-apk/clip-text-flutter-${{ steps.version.outputs.version }}.apk
+          tag_name: ${{ github.event.release.tag_name }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: build/app/outputs/flutter-apk/app-release.apk
-          asset_name: clip-text-flutter-${{ steps.version.outputs.version }}.apk
-          asset_content_type: application/vnd.android.package-archive
+
+      # Backup upload method using GitHub CLI
+      - name: Upload APK using GitHub CLI (backup)
+        if: failure()
+        run: |
+          gh release upload ${{ github.event.release.tag_name }} build/app/outputs/flutter-apk/clip-text-flutter-${{ steps.version.outputs.version }}.apk --clobber
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
