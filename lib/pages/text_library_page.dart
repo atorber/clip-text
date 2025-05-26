@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/storage_service.dart';
 import '../models/transcript.dart';
-import 'package:crypto/crypto.dart';
 import 'dart:convert';
-import 'package:http/http.dart' as http;
 import '../pages/transcribe_task_detail_page.dart';
 
 class TextLibraryPage extends StatefulWidget {
@@ -30,52 +28,7 @@ class _TextLibraryPageState extends State<TextLibraryPage> {
     });
   }
 
-  Future<String?> _queryIflytekResult(String orderId) async {
-    // 读取API配置
-    final config = await StorageService.getTranscribeApiConfig();
-    final appId = config['appId']?.trim();
-    final secretKey = config['secretKey']?.trim();
-    if (appId == null || appId.isEmpty || secretKey == null || secretKey.isEmpty) {
-      throw Exception('请先在设置中填写转文字API的APPID和SecretKey');
-    }
-    final ts = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-    final md5Str = md5.convert(utf8.encode(appId + ts.toString())).toString();
-    final hmacSha1 = Hmac(sha1, utf8.encode(secretKey));
-    final signaBytes = hmacSha1.convert(utf8.encode(md5Str)).bytes;
-    final signa = base64.encode(signaBytes);
-    final queryParams = {
-      'appId': appId,
-      'signa': signa,
-      'ts': ts.toString(),
-      'orderId': orderId,
-    };
-    final uri = Uri.https('raasr.xfyun.cn', '/v2/api/getResult', queryParams);
-    print('[查询结果] $uri');
-    final response = await http.get(uri);
-    print('[查询返回] ${response.statusCode} ${response.body}');
-    if (response.statusCode == 200) {
-      final json = jsonDecode(response.body);
-      if (json['code'] == '000000' && json['descInfo'] == 'success') {
-        final orderResultStr = json['content']['orderResult'];
-        if (orderResultStr is String && orderResultStr.isNotEmpty) {
-          try {
-            final text = parseIflytekOrderResult(orderResultStr);
-            return text.isNotEmpty ? text : '暂无结果，请稍后刷新';
-          } catch (e) {
-            return '解析orderResult失败: $e';
-          }
-        } else {
-          return '暂无结果，请稍后刷新';
-        }
-      } else if (json['code'] == '26620') {
-        return '任务未完成，请稍后再试';
-      } else {
-        throw Exception('查询失败: ${json['descInfo'] ?? json['failed'] ?? json['desc']}');
-      }
-    } else {
-      throw Exception('HTTP错误: ${response.statusCode}');
-    }
-  }
+
 
   String parseIflytekOrderResult(String orderResultStr) {
     final orderResult = jsonDecode(orderResultStr);

@@ -28,7 +28,7 @@ class ChatGptService {
       }
 
       // 构建对话内容
-      final systemPrompt = '你是一个专业的AI助手。用户会提供一段语音转写的文本内容，然后对这段内容提出问题或要求进行处理。请根据用户的要求对文本内容进行分析、总结、问答或其他处理。';
+      const systemPrompt = '你是一个专业的AI助手。用户会提供一段语音转写的文本内容，然后对这段内容提出问题或要求进行处理。请根据用户的要求对文本内容进行分析、总结、问答或其他处理。';
       final userMessage = '转写文本内容：\n\n$transcriptText\n\n用户要求：$userPrompt';
 
       final requestBody = {
@@ -78,7 +78,7 @@ class ChatGptService {
         if (choices.isNotEmpty) {
           final content = choices[0]['message']['content'] as String;
           print('[ChatGPT] AI回复长度: ${content.length} 字符');
-          print('[ChatGPT] AI回复预览: ${content.length > 100 ? content.substring(0, 100) + "..." : content}');
+          print('[ChatGPT] AI回复预览: ${content.length > 100 ? "${content.substring(0, 100)}..." : content}');
           return content;
         } else {
           print('[ChatGPT] 错误: 响应中没有选择');

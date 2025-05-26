@@ -114,37 +114,7 @@ class _SubmitTranscribeTaskPageState extends State<SubmitTranscribeTaskPage> {
     }
   }
 
-  // 轮询获取转写结果
-  Future<String> _getTranscribeResult({
-    required String appId,
-    required String secretKey,
-    required String taskId,
-  }) async {
-    for (int i = 0; i < 30; i++) { // 最多轮询30次
-      final ts = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-      final signa = _getSigna(appId, secretKey, ts);
-      final uri = Uri.parse('https://raasr.xfyun.cn/v2/api/getResult?app_id=$appId&signa=$signa&ts=$ts&task_id=$taskId');
-      print('[查询] $uri');
-      final response = await http.get(uri);
-      print('[查询返回] ${response.statusCode} ${response.body}');
-      if (response.statusCode == 200) {
-        final json = jsonDecode(response.body);
-        if (json['ok'] == 0) {
-          final resultList = json['data'] as List;
-          final text = resultList.map((e) => e['onebest'] ?? '').join('\n');
-          if (text.trim().isNotEmpty) return text;
-        } else if (json['ok'] == 1) {
-          // 处理中，继续轮询
-        } else {
-          throw Exception('查询失败: ${json['failed'] ?? json['desc']}');
-        }
-      } else {
-        throw Exception('HTTP错误: ${response.statusCode}');
-      }
-      await Future.delayed(Duration(seconds: 2));
-    }
-    throw Exception('转写超时，请稍后在文本库中刷新查看');
-  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -182,12 +152,13 @@ class _SubmitTranscribeTaskPageState extends State<SubmitTranscribeTaskPage> {
                             ],
                           ),
                         );
-                        if (goSetting == true) {
+                        if (goSetting == true && mounted) {
                           Navigator.push(context, MaterialPageRoute(builder: (_) => SettingsPage()));
                         }
                         return;
                       }
                       try {
+                        if (!mounted) return;
                         showDialog(
                           context: context,
                           barrierDismissible: false,
@@ -210,6 +181,7 @@ class _SubmitTranscribeTaskPageState extends State<SubmitTranscribeTaskPage> {
                           'orderId': orderId,
                         };
                         await StorageService.insertTranscript(transcript);
+                        if (!mounted) return;
                         Navigator.pop(context); // 关闭loading
                         showDialog(
                           context: context,
@@ -234,15 +206,17 @@ class _SubmitTranscribeTaskPageState extends State<SubmitTranscribeTaskPage> {
                               TextButton(
                                 onPressed: () {
                                   Navigator.pop(context); // 关闭弹窗
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => TranscribeTaskDetailPage(
-                                        orderId: orderId,
-                                        autoStartAiChat: false,
+                                  if (mounted) {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => TranscribeTaskDetailPage(
+                                          orderId: orderId,
+                                          autoStartAiChat: false,
+                                        ),
                                       ),
-                                    ),
-                                  );
+                                    );
+                                  }
                                 },
                                 child: Text('查看结果'),
                               ),
@@ -250,15 +224,17 @@ class _SubmitTranscribeTaskPageState extends State<SubmitTranscribeTaskPage> {
                           ),
                         );
                       } catch (e) {
-                        Navigator.pop(context); // 关闭loading
-                        showDialog(
-                          context: context,
-                          builder: (_) => AlertDialog(
-                            title: Text('转写失败'),
-                            content: Text(e.toString()),
-                            actions: [TextButton(onPressed: () => Navigator.pop(context), child: Text('确定'))],
-                          ),
-                        );
+                        if (mounted) {
+                          Navigator.pop(context); // 关闭loading
+                          showDialog(
+                            context: context,
+                            builder: (_) => AlertDialog(
+                              title: Text('转写失败'),
+                              content: Text(e.toString()),
+                              actions: [TextButton(onPressed: () => Navigator.pop(context), child: Text('确定'))],
+                            ),
+                          );
+                        }
                       }
                     },
                     child: Text('提交转写任务'),
