@@ -7,6 +7,7 @@ import '../services/chatgpt_service.dart';
 import 'package:crypto/crypto.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:share_plus/share_plus.dart';
 
 // 聊天消息类
 class ChatMessage {
@@ -625,31 +626,46 @@ class _TranscribeTaskDetailPageState extends State<TranscribeTaskDetailPage> {
                   ],
                 ),
               ),
-              // 复制按钮
-              if (_hasTranscriptText()) ...[
-                SizedBox(width: 12),
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.green[50],
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: IconButton(
-                    icon: Icon(Icons.copy, color: Colors.green[700], size: 20),
-                    onPressed: () {
-                      Clipboard.setData(ClipboardData(text: _task!['text'] ?? ''));
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('转写内容已复制到剪贴板'),
-                          duration: Duration(seconds: 2),
-                        ),
-                      );
-                    },
-                    tooltip: '复制转写内容',
-                    padding: EdgeInsets.all(8),
-                    constraints: BoxConstraints(minWidth: 36, minHeight: 36),
-                  ),
-                ),
-              ],
+                             // 复制按钮
+               if (_hasTranscriptText()) ...[
+                 SizedBox(width: 12),
+                 Container(
+                   decoration: BoxDecoration(
+                     color: Colors.green[50],
+                     borderRadius: BorderRadius.circular(8),
+                   ),
+                   child: IconButton(
+                     icon: Icon(Icons.copy, color: Colors.green[700], size: 20),
+                     onPressed: () {
+                       Clipboard.setData(ClipboardData(text: _task!['text'] ?? ''));
+                       ScaffoldMessenger.of(context).showSnackBar(
+                         SnackBar(
+                           content: Text('转写内容已复制到剪贴板'),
+                           duration: Duration(seconds: 2),
+                         ),
+                       );
+                     },
+                     tooltip: '复制转写内容',
+                     padding: EdgeInsets.all(8),
+                     constraints: BoxConstraints(minWidth: 36, minHeight: 36),
+                   ),
+                 ),
+                 SizedBox(width: 8),
+                 // 分享按钮
+                 Container(
+                   decoration: BoxDecoration(
+                     color: Colors.blue[50],
+                     borderRadius: BorderRadius.circular(8),
+                   ),
+                   child: IconButton(
+                     icon: Icon(Icons.share, color: Colors.blue[700], size: 20),
+                     onPressed: () => _shareTranscriptText(),
+                     tooltip: '分享转写内容',
+                     padding: EdgeInsets.all(8),
+                     constraints: BoxConstraints(minWidth: 36, minHeight: 36),
+                   ),
+                 ),
+               ],
             ],
           ),
           SizedBox(height: 12),
@@ -977,8 +993,82 @@ class _TranscribeTaskDetailPageState extends State<TranscribeTaskDetailPage> {
     return _task!['text'] != null && (_task!['text'] as String).trim().isNotEmpty;
   }
 
+  // 分享转写文本
+  Future<void> _shareTranscriptText() async {
+    if (!_hasTranscriptText()) return;
+    
+    final text = _task!['text'] as String;
+    final createdAt = _task!['createdAt'] ?? '未知时间';
+    
+    final shareContent = '''
+📝 录音转写内容
+
+🕐 录制时间：$createdAt
+
+📄 转写内容：
+$text
+
+---
+来自 ClipText 录音转写应用
+''';
+
+    try {
+      await Share.share(
+        shareContent,
+        subject: '录音转写内容分享',
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('分享失败: ${e.toString()}')),
+        );
+      }
+    }
+  }
+
+  // 分享AI回复
+  Future<void> _shareAiMessage(String content, String userQuestion) async {
+    final shareContent = '''
+🤖 AI智能回复
+
+❓ 用户提问：
+$userQuestion
+
+💡 AI回答：
+$content
+
+---
+来自 ClipText AI对话功能
+''';
+
+    try {
+      await Share.share(
+        shareContent,
+        subject: 'AI对话内容分享',
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('分享失败: ${e.toString()}')),
+        );
+      }
+    }
+  }
+
   // 构建聊天气泡
   Widget _buildMessageBubble(ChatMessage message) {
+    // 查找对应的用户问题（用于AI回复的分享）
+    String? correspondingUserQuestion;
+    if (!message.isUser && message.isMarkdown) {
+      // 查找前一条用户消息
+      final currentIndex = _messages.indexOf(message);
+      if (currentIndex > 0) {
+        final previousMessage = _messages[currentIndex - 1];
+        if (previousMessage.isUser) {
+          correspondingUserQuestion = previousMessage.content;
+        }
+      }
+    }
     return Padding(
       padding: EdgeInsets.only(bottom: 16),
       child: Row(
@@ -1089,6 +1179,7 @@ class _TranscribeTaskDetailPageState extends State<TranscribeTaskDetailPage> {
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
+                          // 复制按钮
                           GestureDetector(
                             onTap: () {
                               Clipboard.setData(ClipboardData(text: message.content));
@@ -1105,6 +1196,27 @@ class _TranscribeTaskDetailPageState extends State<TranscribeTaskDetailPage> {
                               color: message.isUser ? Colors.white70 : Colors.grey[600],
                               ),
                             ),
+                          SizedBox(width: 8),
+                          // 分享按钮
+                          GestureDetector(
+                            onTap: () {
+                              if (!message.isUser && correspondingUserQuestion != null) {
+                                // 分享AI回复
+                                _shareAiMessage(message.content, correspondingUserQuestion);
+                              } else {
+                                // 分享普通消息
+                                Share.share(
+                                  message.content,
+                                  subject: message.isUser ? '用户消息分享' : 'AI回复分享',
+                                );
+                              }
+                            },
+                            child: Icon(
+                              Icons.share,
+                              size: 14,
+                              color: message.isUser ? Colors.white70 : Colors.grey[600],
+                            ),
+                          ),
                           ],
                         ),
                       ],
