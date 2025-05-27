@@ -593,36 +593,65 @@ class _TranscribeTaskDetailPageState extends State<TranscribeTaskDetailPage> {
                           child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-          // 转写状态指示器
-                              Container(
-            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                decoration: BoxDecoration(
-              color: _hasTranscriptText() ? Colors.green[50] : Colors.orange[50],
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: _hasTranscriptText() ? Colors.green[200]! : Colors.orange[200]!,
-              ),
-                                ),
-                                child: Row(
-              mainAxisSize: MainAxisSize.min,
-                                  children: [
-                Icon(
-                  _hasTranscriptText() ? Icons.check_circle : Icons.pending,
-                  size: 16,
-                  color: _hasTranscriptText() ? Colors.green[700] : Colors.orange[700],
-                ),
-                                    SizedBox(width: 8),
-                Text(
-                  _hasTranscriptText() ? '转写完成' : '转写中...',
-                  style: TextStyle(
-                    color: _hasTranscriptText() ? Colors.green[700] : Colors.orange[700],
-                    fontWeight: FontWeight.w500,
-                    fontSize: 14,
+          // 转写状态指示器和复制按钮
+          Row(
+            children: [
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: _hasTranscriptText() ? Colors.green[50] : Colors.orange[50],
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: _hasTranscriptText() ? Colors.green[200]! : Colors.orange[200]!,
                   ),
-                                      ),
-                                  ],
-                                ),
-                              ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      _hasTranscriptText() ? Icons.check_circle : Icons.pending,
+                      size: 16,
+                      color: _hasTranscriptText() ? Colors.green[700] : Colors.orange[700],
+                    ),
+                    SizedBox(width: 8),
+                    Text(
+                      _hasTranscriptText() ? '转写完成' : '转写中...',
+                      style: TextStyle(
+                        color: _hasTranscriptText() ? Colors.green[700] : Colors.orange[700],
+                        fontWeight: FontWeight.w500,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // 复制按钮
+              if (_hasTranscriptText()) ...[
+                SizedBox(width: 12),
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.green[50],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: IconButton(
+                    icon: Icon(Icons.copy, color: Colors.green[700], size: 20),
+                    onPressed: () {
+                      Clipboard.setData(ClipboardData(text: _task!['text'] ?? ''));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('转写内容已复制到剪贴板'),
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                    },
+                    tooltip: '复制转写内容',
+                    padding: EdgeInsets.all(8),
+                    constraints: BoxConstraints(minWidth: 36, minHeight: 36),
+                  ),
+                ),
+              ],
+            ],
+          ),
           SizedBox(height: 12),
 
           // 转写内容区域
@@ -938,27 +967,7 @@ class _TranscribeTaskDetailPageState extends State<TranscribeTaskDetailPage> {
             ),
           ),
         ),
-        SizedBox(width: 12),
-        // 复制按钮
-                        Container(
-                          decoration: BoxDecoration(
-            color: Colors.green[50],
-                            borderRadius: BorderRadius.circular(8),
-          ),
-          child: IconButton(
-            icon: Icon(Icons.copy, color: Colors.green[700]),
-            onPressed: _hasTranscriptText() ? () {
-              Clipboard.setData(ClipboardData(text: _task!['text'] ?? ''));
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('转写内容已复制到剪贴板'),
-                  duration: Duration(seconds: 2),
-                ),
-              );
-            } : null,
-            tooltip: '复制转写内容',
-          ),
-        ),
+
       ],
     );
   }
