@@ -143,3 +143,13 @@ flutter build apk --release
   ```bash
   flutter logs
   ```
+
+## API服务
+
+### 讯飞录音文件转写
+
+https://console.xfyun.cn/services/lfasr
+
+### ChatGPT接口
+
+https://gptgod.online/
