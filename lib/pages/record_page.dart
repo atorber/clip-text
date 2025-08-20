@@ -104,31 +104,53 @@ class _RecordPageState extends State<RecordPage> {
     recordPath = null;
   }
 
+  /// 录音按钮点击处理：
+  /// - 未在录制：发起系统授权；仅在授权成功并返回有效路径后切换为“录制中”。
+  /// - 用户取消/授权失败：保持“开始录制”状态并不启动计时。
+  /// - 录制中：停止录制并提示是否保存。
   void _onRecordButtonPressed() async {
     if (!isRecording) {
-      setState(() => isRecording = true);
-      recordPath = await SystemAudioRecorderService.startRecord('com.android.chrome');
-      if (recordPath != null) {
-        try {
-          await SystemAudioRecorder().startFloatingRecorder();
-        } catch (e) {
-          if (e.toString().contains('NO_PERMISSION')) {
-            if (mounted) {
-              showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: Text('需要悬浮窗权限'),
-                  content: Text('请在系统设置中授予悬浮窗权限后再试。'),
-                  actions: [TextButton(onPressed: () => Navigator.pop(context), child: Text('确定'))],
-                ),
-              );
+      try {
+        final path = await SystemAudioRecorderService.startRecord('com.android.chrome');
+        if (path != null) {
+          setState(() {
+            isRecording = true;
+            recordPath = path;
+          });
+          try {
+            await SystemAudioRecorder().startFloatingRecorder();
+          } catch (e) {
+            if (e.toString().contains('NO_PERMISSION')) {
+              if (mounted) {
+                showDialog(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: Text('需要悬浮窗权限'),
+                    content: Text('请在系统设置中授予悬浮窗权限后再试。'),
+                    actions: [TextButton(onPressed: () => Navigator.pop(context), child: Text('确定'))],
+                  ),
+                );
+              }
             }
           }
+          _startTimer();
+        } else {
+          // 授权未通过或未返回有效路径，保持未录制状态
+          if (mounted) {
+            setState(() {
+              isRecording = false;
+              recordPath = null;
+            });
+          }
         }
-        _startTimer();
-      } else {
-        setState(() => isRecording = false);
-        // 可选：提示用户录音授权失败
+      } catch (e) {
+        // 处理平台异常（例如用户取消屏幕捕获授权）
+        if (mounted) {
+          setState(() {
+            isRecording = false;
+            recordPath = null;
+          });
+        }
       }
     } else {
       print('准备停止录制');

@@ -43,6 +43,8 @@ class _RecordingsListPageState extends State<RecordingsListPage> {
     super.dispose();
   }
 
+  /// 加载本地录音文件列表，并按修改时间倒序排序；
+  /// 同时检测每条录音对应的转写任务是否已有文本结果。
   Future<void> _loadRecordings() async {
     setState(() => _loading = true);
     try {
@@ -66,6 +68,8 @@ class _RecordingsListPageState extends State<RecordingsListPage> {
                 sourceApp: null,
               ))
           .toList();
+      // 默认排序改为：按时间倒序（最新在前）
+      newRecordings.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       
       // 检查每个录音是否有对应的转录任务
       final allTranscripts = await StorageService.getAllTranscripts();
