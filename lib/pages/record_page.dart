@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import '../utils/pcm_to_wav.dart';
 import 'package:system_audio_recorder/system_audio_recorder.dart';
+import '../utils/colors.dart';
 
 class RecordPage extends StatefulWidget {
   @override
@@ -230,24 +231,310 @@ class _RecordPageState extends State<RecordPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.mic, size: 80, color: Colors.deepOrange),
-          SizedBox(height: 20),
-          Text(isRecording ? '正在录制...  ${_formatDuration(_elapsedSeconds)}' : '点击下方按钮开始录制系统音频'),
-          SizedBox(height: 40),
-          ElevatedButton.icon(
-            onPressed: _onRecordButtonPressed,
-            icon: Icon(isRecording ? Icons.stop : Icons.fiber_manual_record, color: Colors.white),
-            label: Text(isRecording ? '停止录制' : '开始录制', style: TextStyle(color: Colors.white)),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: isRecording ? Colors.grey : Colors.red,
-              minimumSize: Size(160, 48),
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+          const SizedBox(height: 24),
+          // Header / Metadata row
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '当前会话',
+                    style: TextStyle(
+                      color: AppColors.onSurfaceVariant,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '未命名档案_042',
+                    style: TextStyle(
+                      color: AppColors.primary,
+                      fontSize: 24,
+                      fontWeight: FontWeight.w800,
+                      fontFamily: 'Manrope',
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceContainerHigh,
+                  borderRadius: BorderRadius.circular(100),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.language, color: AppColors.primary, size: 14),
+                    const SizedBox(width: 6),
+                    Text(
+                      '中文 (简体)',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Icon(Icons.expand_more, color: AppColors.outline, size: 12),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 32),
+          // Visualizer
+          Container(
+            height: 180,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: AppColors.surfaceContainerLow,
+              borderRadius: BorderRadius.circular(32),
+            ),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                // Inner gradient
+                Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(32),
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        AppColors.surfaceContainerLow.withAlpha(51),
+                      ],
+                    ),
+                  ),
+                ),
+                // Mock waveform
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    _buildWaveformBar(16, AppColors.outlineVariant),
+                    _buildWaveformBar(24, AppColors.outlineVariant),
+                    _buildWaveformBar(48, AppColors.primary),
+                    _buildWaveformBar(72, AppColors.primary),
+                    _buildWaveformBar(96, AppColors.primary),
+                    _buildWaveformBar(64, AppColors.primary),
+                    _buildWaveformBar(40, AppColors.primary),
+                    _buildWaveformBar(72, AppColors.primary),
+                    _buildWaveformBar(84, AppColors.primary),
+                    _buildWaveformBar(96, AppColors.primary),
+                    _buildWaveformBar(64, AppColors.primary),
+                    _buildWaveformBar(72, AppColors.primary),
+                    _buildWaveformBar(96, AppColors.primary),
+                    _buildWaveformBar(112, AppColors.primary),
+                    _buildWaveformBar(84, AppColors.primary),
+                    _buildWaveformBar(104, AppColors.primary),
+                    _buildWaveformBar(64, AppColors.outlineVariant),
+                    _buildWaveformBar(48, AppColors.outlineVariant),
+                    _buildWaveformBar(56, AppColors.outlineVariant),
+                    _buildWaveformBar(32, AppColors.outlineVariant),
+                    _buildWaveformBar(24, AppColors.outlineVariant),
+                  ],
+                ),
+                Positioned(
+                  bottom: 24,
+                  child: Text(
+                    _formatDuration(_elapsedSeconds),
+                    style: TextStyle(
+                      fontFamily: 'Manrope',
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-        ],
+          const SizedBox(height: 24),
+          // Fake Realtime Transcription
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: AppColors.surfaceContainer,
+              borderRadius: BorderRadius.circular(32),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 6,
+                          height: 6,
+                          decoration: BoxDecoration(
+                            color: AppColors.tertiary,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '实时转录',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.onSurface,
+                            letterSpacing: 1.0,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceContainerLowest,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(Icons.open_in_full, size: 16, color: AppColors.primary),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                RichText(
+                  text: TextSpan(
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 16,
+                      color: AppColors.onSurface.withAlpha(230),
+                      height: 1.6,
+                    ),
+                    children: [
+                      TextSpan(text: '“……声音的架构不仅仅是记录频率，而是捕捉说话者呼吸背后的'),
+                      WidgetSpan(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryFixed,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            '意图',
+                            style: TextStyle(color: AppColors.onPrimaryFixedVariant, fontSize: 16),
+                          ),
+                        ),
+                      ),
+                      TextSpan(text: '。当我们存档这些时刻时，我们本质上是在构建一个人类意识的图书馆……”'),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 32),
+          // Controls
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              Column(
+                children: [
+                  Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceContainer,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Icon(Icons.description, color: AppColors.onSurfaceVariant),
+                  ),
+                  const SizedBox(height: 8),
+                  Text('笔记', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.onSurfaceVariant, letterSpacing: 2)),
+                ],
+              ),
+              GestureDetector(
+                onTap: _onRecordButtonPressed,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    if (isRecording)
+                      Container(
+                        width: 120,
+                        height: 120,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: AppColors.tertiary.withAlpha(12),
+                        ),
+                      ),
+                    Container(
+                      width: 88,
+                      height: 88,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: isRecording
+                            ? [AppColors.tertiary, AppColors.error]
+                            : [AppColors.primary, AppColors.primaryContainer],
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.onSurface.withAlpha(38),
+                            blurRadius: 24,
+                            offset: Offset(0, 8),
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        isRecording ? Icons.stop : Icons.mic,
+                        color: Colors.white,
+                        size: 40,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                children: [
+                  Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceContainer,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Icon(Icons.layers, color: AppColors.onSurfaceVariant),
+                  ),
+                  const SizedBox(height: 8),
+                  Text('图层', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.onSurfaceVariant, letterSpacing: 2)),
+                ],
+              ),
+            ],
+          ),
+            const SizedBox(height: 80), // Space for bottom nav
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWaveformBar(double height, Color color) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 1.5),
+      width: 4,
+      height: height,
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(10),
       ),
     );
   }

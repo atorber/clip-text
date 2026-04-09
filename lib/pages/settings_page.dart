@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/storage_service.dart';
+import '../utils/colors.dart';
 
 class SettingsPage extends StatefulWidget {
   @override
@@ -55,78 +56,205 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      // appBar: AppBar(title: Text('转文字API密钥')),
-      body: _loading
-          ? Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(24.0),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SizedBox(height: 24),
-                    Text('讯飞语音转文字API配置', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                    SizedBox(height: 8),
-                    Text('APPID: ${_appIdController.text.isEmpty ? '未设置' : _appIdController.text}', style: TextStyle(fontSize: 13, color: Colors.grey)),
-                    Text('SecretKey: ${_secretKeyController.text.isEmpty ? '未设置' : _secretKeyController.text}', style: TextStyle(fontSize: 13, color: Colors.grey)),
-                    SizedBox(height: 16),
-                    TextFormField(
-                      controller: _appIdController,
-                      decoration: InputDecoration(labelText: 'APPID'),
-                      validator: (v) => v == null || v.trim().isEmpty ? '请输入APPID' : null,
-                    ),
-                    SizedBox(height: 16),
-                    TextFormField(
-                      controller: _secretKeyController,
-                      decoration: InputDecoration(labelText: 'SecretKey'),
-                      validator: (v) => v == null || v.trim().isEmpty ? '请输入SecretKey' : null,
-                    ),
-                    SizedBox(height: 32),
-                    Text('OpenAI API配置', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                    SizedBox(height: 8),
-                    Text('API Key: ${_chatGptApiKeyController.text.isEmpty ? '未设置' : '已设置'}', style: TextStyle(fontSize: 13, color: Colors.grey)),
-                    Text('Base URL: ${_chatGptBaseUrlController.text.isEmpty ? '使用默认' : _chatGptBaseUrlController.text}', style: TextStyle(fontSize: 13, color: Colors.grey)),
-                    Text('Model: ${_chatGptModelController.text.isEmpty ? '使用默认' : _chatGptModelController.text}', style: TextStyle(fontSize: 13, color: Colors.grey)),
-                    SizedBox(height: 16),
-                    TextFormField(
-                      controller: _chatGptApiKeyController,
-                      decoration: InputDecoration(
-                        labelText: 'ChatGPT API Key',
-                        hintText: '请输入OpenAI API Key',
-                      ),
-                      validator: (v) => v == null || v.trim().isEmpty ? '请输入ChatGPT API Key' : null,
-                      // obscureText: true,
-                    ),
-                    SizedBox(height: 16),
-                    TextFormField(
-                      controller: _chatGptBaseUrlController,
-                      decoration: InputDecoration(
-                        labelText: 'Base URL (可选)',
-                        hintText: 'https://api.openai.com',
-                      ),
-                    ),
-                    SizedBox(height: 16),
-                    TextFormField(
-                      controller: _chatGptModelController,
-                      decoration: InputDecoration(
-                        labelText: 'Model (可选)',
-                        hintText: 'gpt-3.5-turbo',
-                      ),
-                    ),
-                    SizedBox(height: 32),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: _saveConfig,
-                        child: Text('保存'),
-                      ),
-                    ),
-                  ],
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.only(left: 24, right: 24, top: 24, bottom: 100),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '设置',
+              style: TextStyle(
+                fontFamily: 'Manrope',
+                fontWeight: FontWeight.w800,
+                fontSize: 32,
+                color: AppColors.primary,
+                letterSpacing: -1.0,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '管理您的数字档案和云端同步。',
+              style: TextStyle(
+                color: AppColors.onSurfaceVariant,
+                fontSize: 14,
+                fontFamily: 'Inter',
+              ),
+            ),
+            const SizedBox(height: 32),
+
+            // AI Model Configuration
+            Row(
+              children: [
+                Icon(Icons.psychology, color: AppColors.primary, size: 24),
+                const SizedBox(width: 12),
+                Text(
+                  'AI 模型配置 (OpenAI)',
+                  style: TextStyle(
+                    fontFamily: 'Manrope',
+                    fontWeight: FontWeight.bold,
+                    fontSize: 20,
+                    color: AppColors.onSurface,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceContainerLow,
+                borderRadius: BorderRadius.circular(32),
+              ),
+              child: Column(
+                children: [
+                  _buildInputField(
+                    label: 'Base URL (可选)',
+                    controller: _chatGptBaseUrlController,
+                    hint: 'https://api.openai.com',
+                  ),
+                  const SizedBox(height: 16),
+                  _buildInputField(
+                    label: '模型名称',
+                    controller: _chatGptModelController,
+                    hint: '例如：gpt-3.5-turbo',
+                  ),
+                  const SizedBox(height: 16),
+                  _buildInputField(
+                    label: 'API 密钥',
+                    controller: _chatGptApiKeyController,
+                    hint: 'sk-••••••••••••••••••••••••••••••••',
+                    isPassword: true,
+                    validator: (v) => v == null || v.trim().isEmpty ? '请输入ChatGPT API Key' : null,
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 32),
+
+            // Transcription Configuration
+            Row(
+              children: [
+                Icon(Icons.description, color: AppColors.primary, size: 24),
+                const SizedBox(width: 12),
+                Text(
+                  '转录引擎 (讯飞)',
+                  style: TextStyle(
+                    fontFamily: 'Manrope',
+                    fontWeight: FontWeight.bold,
+                    fontSize: 20,
+                    color: AppColors.onSurface,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceContainerLow,
+                borderRadius: BorderRadius.circular(32),
+              ),
+              child: Column(
+                children: [
+                  _buildInputField(
+                    label: 'APPID',
+                    controller: _appIdController,
+                    hint: '请输入APPID',
+                    validator: (v) => v == null || v.trim().isEmpty ? '请输入APPID' : null,
+                  ),
+                  const SizedBox(height: 16),
+                  _buildInputField(
+                    label: 'SecretKey',
+                    controller: _secretKeyController,
+                    hint: '请输入SecretKey',
+                    isPassword: true,
+                    validator: (v) => v == null || v.trim().isEmpty ? '请输入SecretKey' : null,
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 32),
+
+            // Save Button
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _saveConfig,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(100),
+                  ),
+                  elevation: 0,
+                ),
+                child: const Text(
+                  '保存设置',
+                  style: TextStyle(
+                    fontFamily: 'Manrope',
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
                 ),
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInputField({
+    required String label,
+    required TextEditingController controller,
+    String? hint,
+    bool isPassword = false,
+    String? Function(String?)? validator,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 8),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
+              color: AppColors.onSurfaceVariant,
+            ),
+          ),
+        ),
+        TextFormField(
+          controller: controller,
+          obscureText: isPassword,
+          validator: validator,
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: TextStyle(color: AppColors.outline),
+            filled: true,
+            fillColor: AppColors.surfaceContainerHigh,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide.none,
+            ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            suffixIcon: isPassword
+                ? Icon(Icons.visibility, color: AppColors.onSurfaceVariant)
+                : null,
+          ),
+        ),
+      ],
     );
   }
 

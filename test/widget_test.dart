@@ -16,18 +16,15 @@ void main() {
     await tester.pumpWidget(MyApp());
 
     // Verify that the app starts with the record page
-    // There should be exactly 2 "录制" texts: one in AppBar title and one in BottomNavigationBar
-    expect(find.text('录制'), findsNWidgets(2));
+    // There should be a text "录音" in the custom bottom navigation bar
+    expect(find.text('录音'), findsOneWidget);
     
-    // Verify that bottom navigation bar is present
-    expect(find.byType(BottomNavigationBar), findsOneWidget);
+    // Verify that the custom bottom navigation bar is present (Row inside ClipRRect > BackdropFilter)
+    expect(find.byType(ClipRRect), findsWidgets);
     
     // Verify all tab labels are present
-    expect(find.text('录音列表'), findsOneWidget);
-    expect(find.text('文本库'), findsOneWidget);
+    expect(find.text('存档'), findsOneWidget);
+    expect(find.text('AI 聊天'), findsOneWidget);
     expect(find.text('设置'), findsOneWidget);
-    
-    // Verify that AppBar is present with correct title
-    expect(find.byType(AppBar), findsOneWidget);
   });
 }
