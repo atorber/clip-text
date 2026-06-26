@@ -53,7 +53,7 @@ class _TextLibraryPageState extends State<TextLibraryPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                '录音库',
+                '转写存档',
                 style: TextStyle(
                   fontFamily: 'Manrope',
                   fontWeight: FontWeight.w800,
@@ -77,7 +77,7 @@ class _TextLibraryPageState extends State<TextLibraryPage> {
                     Expanded(
                       child: TextField(
                         decoration: InputDecoration(
-                          hintText: '搜索您的录音库...',
+                          hintText: '搜索您的转写存档...',
                           hintStyle: TextStyle(color: AppColors.onSurfaceVariant.withAlpha(153)),
                           border: InputBorder.none,
                           isDense: true,
@@ -114,7 +114,7 @@ class _TextLibraryPageState extends State<TextLibraryPage> {
               ? ListView(
                   children: [
                     const SizedBox(height: 120),
-                    Center(child: Text('暂无文本，快去录制并转写吧~', style: TextStyle(fontSize: 16, color: AppColors.onSurfaceVariant))),
+                    Center(child: Text('暂无转写存档，快去音频库转写录音吧~', style: TextStyle(fontSize: 16, color: AppColors.onSurfaceVariant))),
                   ],
                 )
               : ListView.builder(

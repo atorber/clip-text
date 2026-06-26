@@ -136,11 +136,24 @@ class _TranscribeTaskDetailPageState extends State<TranscribeTaskDetailPage> {
       _audioReady = audioReady;
     });
     if (task != null && (task['text'] == null || (task['text'] as String).trim().isEmpty)) {
-      _queryTranscribeResult(task);
+      final provider = task['provider'] as String? ?? StorageService.transcribeProviderIflytek;
+      if (provider != StorageService.transcribeProviderQwen) {
+        _queryTranscribeResult(task);
+      }
     }
   }
 
   Future<void> _queryTranscribeResult(Map task) async {
+    final provider = task['provider'] as String? ?? StorageService.transcribeProviderIflytek;
+    if (provider == StorageService.transcribeProviderQwen) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('通义千问转写为同步接口，请重新提交转写任务')),
+        );
+      }
+      return;
+    }
+
     setState(() { _querying = true; });
     try {
       final config = await StorageService.getTranscribeApiConfig();

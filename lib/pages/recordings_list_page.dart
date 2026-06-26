@@ -66,7 +66,8 @@ class _RecordingsListPageState extends State<RecordingsListPage> {
                 size: f.lengthSync(),
                 sourceApp: null,
               ))
-          .toList();
+          .toList()
+        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
       
       // 检查每个录音是否有对应的转录任务
       final allTranscripts = await StorageService.getAllTranscripts();

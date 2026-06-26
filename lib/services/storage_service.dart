@@ -66,19 +66,43 @@ class StorageService {
     return File('${dir.path}/$_transcriptFileName');
   }
 
+  static const String transcribeProviderIflytek = 'iflytek';
+  static const String transcribeProviderQwen = 'qwen';
+
   // 保存转文字API配置
-  static Future<void> saveTranscribeApiConfig({required String appId, required String secretKey}) async {
+  static Future<void> saveTranscribeApiConfig({
+    required String provider,
+    String? appId,
+    String? secretKey,
+    String? qwenApiKey,
+    String? qwenBaseUrl,
+    String? qwenModel,
+  }) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('transcribe_api_appid', appId);
-    await prefs.setString('transcribe_api_secret', secretKey);
+    await prefs.setString('transcribe_api_provider', provider);
+    await prefs.setString('transcribe_api_appid', appId ?? '');
+    await prefs.setString('transcribe_api_secret', secretKey ?? '');
+    await prefs.setString('transcribe_api_qwen_key', qwenApiKey ?? '');
+    await prefs.setString(
+      'transcribe_api_qwen_base_url',
+      qwenBaseUrl ?? 'https://dashscope.aliyuncs.com/api/v1',
+    );
+    await prefs.setString(
+      'transcribe_api_qwen_model',
+      qwenModel ?? 'qwen3-asr-flash',
+    );
   }
 
   // 读取转文字API配置
   static Future<Map<String, String?>> getTranscribeApiConfig() async {
     final prefs = await SharedPreferences.getInstance();
     return {
+      'provider': prefs.getString('transcribe_api_provider') ?? transcribeProviderIflytek,
       'appId': prefs.getString('transcribe_api_appid'),
       'secretKey': prefs.getString('transcribe_api_secret'),
+      'qwenApiKey': prefs.getString('transcribe_api_qwen_key'),
+      'qwenBaseUrl': prefs.getString('transcribe_api_qwen_base_url'),
+      'qwenModel': prefs.getString('transcribe_api_qwen_model'),
     };
   }
 

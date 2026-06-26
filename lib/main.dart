@@ -73,8 +73,8 @@ class MainTabPageState extends State<MainTabPage> {
   int currentIndex = 0;
   final _pages = [
     RecordPage(),
-    TextLibraryPage(), // 存档 (Archive)
-    RecordingsListPage(), // AI Chat / Recordings list replacement? We will keep this as RecordingsList for now, or maybe AI Chat
+    RecordingsListPage(), // 音频库
+    TextLibraryPage(), // 文本库 / 存档
     SettingsPage(),
   ];
 
@@ -92,9 +92,9 @@ class MainTabPageState extends State<MainTabPage> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildNavItem(0, Icons.mic, '录音'),
-                _buildNavItem(1, Icons.inventory_2, '存档'),
-                _buildNavItem(2, Icons.auto_awesome, 'AI 聊天'),
+                _buildNavItem(0, Icons.mic, '录制'),
+                _buildNavItem(1, Icons.library_music, '音频'),
+                _buildNavItem(2, Icons.auto_awesome, 'AI对话'),
                 _buildNavItem(3, Icons.settings, '设置'),
               ],
             ),
