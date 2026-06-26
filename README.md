@@ -13,9 +13,10 @@
 - **多格式支持**：录制为WAV格式，保证音质
 
 ### 📝 智能语音转文字
-- **讯飞语音识别**：集成讯飞语音转写API，支持高精度中文识别
+- **双引擎支持**：可在设置中切换 **讯飞** 或 **通义千问（DashScope）** 转写引擎
+- **讯飞语音识别**：集成讯飞录音文件转写 API，适合长音频异步处理，支持轮询查询结果
+- **通义千问 ASR**：集成阿里云百炼 `qwen3-asr-flash` 模型，同步返回转写结果，完整还原音频原文
 - **批量转写**：支持批量提交音频文件进行转写
-- **实时查询**：自动轮询转写结果，支持长音频处理
 - **离线存储**：转写结果本地存储，支持离线查看
 
 ### 🤖 AI智能对话
@@ -43,8 +44,10 @@
 
 ### ⚙️ 系统设置
 - **API配置**：
-  - 讯飞语音转写API配置（AppID、SecretKey）
-  - OpenAI API配置（API Key、Base URL、模型选择）
+  - 转写引擎选择（讯飞 / 通义千问）
+  - 讯飞语音转写 API 配置（AppID、SecretKey）
+  - 通义千问 ASR 配置（API Key、Base URL、模型名称）
+  - OpenAI API 配置（API Key、Base URL、模型选择）
 - **权限管理**：自动申请和管理录音、存储等权限
 - **数据管理**：支持数据备份和清理
 
@@ -130,6 +133,9 @@ flutter build apk --release
 - **权限**：首次运行时，应用会请求录音、投屏等权限，请务必全部允许。
 - **Android 14 及以上**：需在 `AndroidManifest.xml` 中声明 `android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION` 和 `android.permission.CAPTURE_VIDEO_OUTPUT`，本项目已配置。
 - **录音功能**：如需录制系统音频，需在真机或支持音频投屏的模拟器上运行，部分模拟器可能不支持。
+- **转写引擎**：
+  - **讯飞**：提交后异步处理，可在详情页刷新获取结果，适合较长音频。
+  - **通义千问**：提交后同步转写，结果立即可用；单文件建议不超过 10 MB。
 - **热重载/重启**：开发过程中可用 `r`（热重载）或 `R`（热重启）提升效率。
 
 ### 6. 常用命令
@@ -144,12 +150,20 @@ flutter build apk --release
   flutter logs
   ```
 
-## API服务
+## API 服务
 
 ### 讯飞录音文件转写
 
+适用于长音频异步转写，需在设置中填写 AppID 与 SecretKey。
+
 https://console.xfyun.cn/services/lfasr
 
-### ChatGPT接口
+### 通义千问 ASR（DashScope）
+
+适用于同步转写，需在设置中选择「通义千问」并填写百炼 API Key。默认模型为 `qwen3-asr-flash`，默认 Base URL 为 `https://dashscope.aliyuncs.com/api/v1`（北京地域）；新加坡地域可使用 `https://dashscope-intl.aliyuncs.com/api/v1`。
+
+https://help.aliyun.com/zh/model-studio/get-api-key
+
+### ChatGPT 接口
 
 https://gptgod.online/

@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import '../utils/pcm_to_wav.dart';
 import 'package:system_audio_recorder/system_audio_recorder.dart';
+import '../utils/colors.dart';
 
 class RecordPage extends StatefulWidget {
   @override
@@ -104,128 +105,71 @@ class _RecordPageState extends State<RecordPage> {
     recordPath = null;
   }
 
-  /// 点击"悬浮按钮"：
-  /// - 调用插件显示悬浮窗；
-  /// - 插件内部会最小化应用（moveTaskToBack）；
-  /// - 若无悬浮窗权限则给出提示。
-  Future<void> _onShowFloatingButtonPressed() async {
-    try {
-      await SystemAudioRecorder().startFloatingRecorder();
-    } catch (e) {
-      if (e.toString().contains('NO_PERMISSION')) {
-        if (mounted) {
-          showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: Text('需要悬浮窗权限'),
-              content: Text('请在系统设置中授予悬浮窗权限后再试。'),
-              actions: [TextButton(onPressed: () => Navigator.pop(context), child: Text('确定'))],
-            ),
-          );
-        }
-      }
-    }
-  }
-
-  /// 停止录制的通用逻辑：
-  /// - 停止录音服务
-  /// - 重置状态和计时器
-  /// - 询问是否保存录音
-  /// - 根据用户选择保存或删除文件
-  Future<void> _stopRecording() async {
-    if (!isRecording) return;
-    
-    print('准备停止录制');
-    final path = await SystemAudioRecorderService.stopRecord();
-    print('停止录制返回: $path');
-    setState(() => isRecording = false);
-    _stopTimer();
-
-    if (path != null) {
-      // 先询问是否保存
-      if (!mounted) return;
-      final save = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text('是否保存录音？'),
-          content: Text('录音完成，是否保存该录音？'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: Text('否'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: Text('是'),
-            ),
-          ],
-        ),
-      );
-      if (save == true) {
-        await _saveRecording(path);
-      } else {
-        // 不保存，删除临时文件
-        try {
-          await File(path).delete();
-        } catch (e) {
-          // 忽略删除临时文件的错误
-          print('删除临时文件失败: $e');
-        }
-      }
-    }
-  }
-
-  /// 录音按钮点击处理：
-  /// - 未在录制：发起系统授权；仅在授权成功并返回有效路径后切换为"录制中"。
-  /// - 用户取消/授权失败：保持"开始录制"状态并不启动计时。
-  /// - 录制中：停止录制并提示是否保存。
   void _onRecordButtonPressed() async {
     if (!isRecording) {
-      try {
-        final path = await SystemAudioRecorderService.startRecord('com.android.chrome');
-        if (path != null) {
-          setState(() {
-            isRecording = true;
-            recordPath = path;
-          });
-          try {
-            await SystemAudioRecorder().startFloatingRecorder();
-          } catch (e) {
-            if (e.toString().contains('NO_PERMISSION')) {
-              if (mounted) {
-                showDialog(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: Text('需要悬浮窗权限'),
-                    content: Text('请在系统设置中授予悬浮窗权限后再试。'),
-                    actions: [TextButton(onPressed: () => Navigator.pop(context), child: Text('确定'))],
-                  ),
-                );
-              }
+      setState(() => isRecording = true);
+      recordPath = await SystemAudioRecorderService.startRecord('com.android.chrome');
+      if (recordPath != null) {
+        try {
+          await SystemAudioRecorder().startFloatingRecorder();
+        } catch (e) {
+          if (e.toString().contains('NO_PERMISSION')) {
+            if (mounted) {
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: Text('需要悬浮窗权限'),
+                  content: Text('请在系统设置中授予悬浮窗权限后再试。'),
+                  actions: [TextButton(onPressed: () => Navigator.pop(context), child: Text('确定'))],
+                ),
+              );
             }
           }
-          _startTimer();
-        } else {
-          // 授权未通过或未返回有效路径，保持未录制状态
-          if (mounted) {
-            setState(() {
-              isRecording = false;
-              recordPath = null;
-            });
-          }
         }
-      } catch (e) {
-        // 处理平台异常（例如用户取消屏幕捕获授权）
-        if (mounted) {
-          setState(() {
-            isRecording = false;
-            recordPath = null;
-          });
-        }
+        _startTimer();
+      } else {
+        setState(() => isRecording = false);
+        // 可选：提示用户录音授权失败
       }
     } else {
-      // 调用通用的停止录制逻辑
-      await _stopRecording();
+      print('准备停止录制');
+      final path = await SystemAudioRecorderService.stopRecord();
+      print('停止录制返回: $path');
+      setState(() => isRecording = false);
+      _stopTimer();
+
+      if (path != null) {
+        // 先询问是否保存
+        if (!mounted) return;
+        final save = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text('是否保存录音？'),
+            content: Text('录音完成，是否保存该录音？'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: Text('否'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: Text('是'),
+              ),
+            ],
+          ),
+        );
+        if (save == true) {
+          await _saveRecording(path);
+        } else {
+          // 不保存，删除临时文件
+          try {
+            await File(path).delete();
+          } catch (e) {
+            // 忽略删除临时文件的错误
+            print('删除临时文件失败: $e');
+          }
+        }
+      }
     }
   }
 
@@ -233,234 +177,50 @@ class _RecordPageState extends State<RecordPage> {
   void initState() {
     super.initState();
     _listenFloatingRecorderEvent();
-    
-    // 检查是否是从悬浮窗选择"是"启动的
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _checkFloatingWindowIntent();
-    });
-  }
-
-  /// 检查是否是从悬浮窗选择"是"启动的，如果是则直接跳转到录音列表
-  void _checkFloatingWindowIntent() {
-    // 由于Flutter的限制，我们无法直接读取启动意图的extra
-    // 但是我们可以通过其他方式实现直接跳转
-    // 这里我们使用一个延迟检查，如果是从悬浮窗启动的，会在录音完成后自动跳转
-    print('检查悬浮窗启动意图 - 当前无法直接读取，等待录音完成后的处理');
   }
 
   void _listenFloatingRecorderEvent() {
     SystemAudioRecorder.setFloatingRecorderEventHandler((event) async {
-      print('收到悬浮窗事件: $event');
-      
-      if (event == 'start') {
-        // 悬浮窗开始录音事件
-        print('悬浮窗启动录音事件，当前状态: isRecording=$isRecording');
-        
-        if (!isRecording) {
-          // 悬浮窗已经启动了录音，我们只需要同步状态
-          setState(() {
-            isRecording = true;
-            // 注意：这里不设置recordPath，因为悬浮窗的录音路径可能不同
-            // recordPath将在停止录音时通过stopRecord获取
-          });
-          _startTimer();
-          print('悬浮窗启动录音状态已同步，启动计时器');
-        } else {
-          print('APP已在录音状态，忽略悬浮窗启动事件');
-        }
-      } else if (event == 'stop') {
-        // 悬浮窗停止录音事件 - 自动保存录音文件
-        print('处理悬浮窗停止录音事件，当前状态: isRecording=$isRecording');
-        
+      if (event == 'stop') {
         if (isRecording) {
-          print('立即处理悬浮窗停止录音事件');
-          await _handleFloatingWindowStop();
-          
-          // 悬浮窗录音完成后，直接跳转到录音列表页面
-          print('悬浮窗录音处理完成，准备跳转到录音列表');
-          _goToRecordingsList();
-        } else {
-          print('APP未在录音状态，忽略悬浮窗停止事件');
+          setState(() => isRecording = false);
+          _stopTimer();
+          if (!mounted) return;
+          final save = await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: Text('是否保存录音？'),
+              content: Text('录音完成，是否保存该录音？'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: Text('否'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(true),
+                  child: Text('是'),
+                ),
+              ],
+            ),
+          );
+          if (save == true) {
+            if (recordPath != null) {
+              await _saveRecording(recordPath!);
+            }
+          } else {
+            if (recordPath != null) {
+              try {
+                await File(recordPath!).delete();
+              } catch (e) {
+                // 忽略删除临时文件的错误
+                print('删除临时文件失败: $e');
+              }
+              recordPath = null;
+            }
+          }
         }
       }
     });
-  }
-
-  /// 处理悬浮窗停止录音的具体逻辑
-  Future<void> _handleFloatingWindowStop() async {
-    print('开始处理悬浮窗停止录音');
-    print('当前recordPath: $recordPath');
-    
-    setState(() => isRecording = false);
-    _stopTimer();
-    
-    // 先调用stopRecord获取最终的录音文件路径，然后自动保存
-    try {
-      print('调用SystemAudioRecorderService.stopRecord()...');
-      final finalPath = await SystemAudioRecorderService.stopRecord();
-      print('悬浮窗停止录音返回路径: $finalPath');
-      
-      if (finalPath != null && finalPath.isNotEmpty) {
-        print('使用stopRecord返回的路径保存: $finalPath');
-        // 悬浮窗录音自动保存，但不显示对话框
-        await _saveRecordingSilently(finalPath);
-        print('悬浮窗录音已自动保存（静默模式）');
-      } else {
-        print('stopRecord返回路径无效，尝试使用recordPath');
-        // 如果stopRecord没有返回路径，尝试使用recordPath
-        if (recordPath != null && recordPath!.isNotEmpty) {
-          print('使用recordPath保存悬浮窗录音: $recordPath');
-          await _saveRecordingSilently(recordPath!);
-          print('使用recordPath保存悬浮窗录音（静默模式）');
-        } else {
-          print('ERROR: 两个路径都无效，无法保存录音文件');
-          print('recordPath: $recordPath');
-          print('finalPath: $finalPath');
-          
-          // 尝试从插件获取录音列表，看是否有可用的录音文件
-          await _trySaveFromRecordingsList();
-        }
-      }
-    } catch (e) {
-      print('悬浮窗录音自动保存失败: $e');
-      // 如果stopRecord失败，尝试使用recordPath
-      if (recordPath != null && recordPath!.isNotEmpty) {
-        try {
-          print('使用recordPath作为备用方案保存: $recordPath');
-          await _saveRecordingSilently(recordPath!);
-          print('使用recordPath保存悬浮窗录音（备用方案，静默模式）');
-        } catch (e2) {
-          print('备用保存方案也失败: $e2');
-          // 最后尝试从录音列表获取
-          await _trySaveFromRecordingsList();
-        }
-      } else {
-        print('ERROR: recordPath也无效，无法使用备用方案');
-        // 尝试从录音列表获取
-        await _trySaveFromRecordingsList();
-      }
-    }
-    
-    recordPath = null;
-  }
-
-  /// 尝试从录音列表获取并保存录音文件
-  Future<void> _trySaveFromRecordingsList() async {
-    print('尝试从录音列表获取录音文件...');
-    try {
-      // 获取录音列表
-      final recordings = await SystemAudioRecorder().listRecordings();
-      print('获取到录音列表: $recordings');
-      
-      if (recordings.isNotEmpty) {
-        // 获取最新的录音文件
-        final latestRecording = recordings.last;
-        print('最新录音文件: $latestRecording');
-        
-        if (latestRecording['path'] != null) {
-          final path = latestRecording['path'] as String;
-          print('尝试保存最新录音文件: $path');
-          await _saveRecordingSilently(path);
-          print('从录音列表保存成功');
-        } else {
-          print('最新录音文件路径为空');
-        }
-      } else {
-        print('录音列表为空，无法获取录音文件');
-      }
-    } catch (e) {
-      print('从录音列表获取录音文件失败: $e');
-    }
-  }
-
-  /// 静默保存录音文件，不显示对话框
-  Future<void> _saveRecordingSilently(String path) async {
-    print('开始静默保存录音文件，输入路径: $path');
-    
-    try {
-      // 检查输入文件是否存在
-      final inputFile = File(path);
-      if (!await inputFile.exists()) {
-        print('ERROR: 输入文件不存在: $path');
-        return;
-      }
-      
-      final inputFileSize = await inputFile.length();
-      print('输入文件大小: $inputFileSize 字节');
-      
-      final extDir = await getExternalStorageDirectory();
-      print('外部存储目录: ${extDir?.path}');
-      
-      final recordingsDir = Directory('${extDir!.path}/Recordings');
-      if (!await recordingsDir.exists()) {
-        await recordingsDir.create(recursive: true);
-        print('创建录音目录: ${recordingsDir.path}');
-      } else {
-        print('录音目录已存在: ${recordingsDir.path}');
-      }
-      
-      final fileName = 'system_record_${DateTime.now().millisecondsSinceEpoch}.pcm';
-      final newPath = '${recordingsDir.path}/$fileName';
-      print('PCM文件路径: $newPath');
-      
-      final file = File(path);
-      final newFile = await file.copy(newPath);
-      print('PCM文件复制完成: ${newFile.path}');
-      
-      await file.delete();
-      print('原始文件已删除');
-      
-      // PCM转WAV, fileName使用当前时间，格式为yyyyMMddHHmmss，例如：20250519163000.wav
-      final now = DateTime.now();
-      final wavName =
-          '${now.year.toString().padLeft(4, '0')}'
-          '${now.month.toString().padLeft(2, '0')}'
-          '${now.day.toString().padLeft(2, '0')}'
-          '${now.hour.toString().padLeft(2, '0')}'
-          '${now.minute.toString().padLeft(2, '0')}'
-          '${now.second.toString().padLeft(2, '0')}.wav';
-
-      final wavPath = p.join(recordingsDir.path, wavName);
-      print('WAV文件路径: $wavPath');
-      
-      print('开始PCM转WAV转换...');
-      await convertPcmToWav(pcmPath: newFile.path, wavPath: wavPath);
-      print('PCM转WAV转换完成');
-      
-      // 删除原始PCM文件
-      await newFile.delete();
-      print('临时PCM文件已删除');
-      
-      // 验证最终文件
-      final finalWavFile = File(wavPath);
-      if (await finalWavFile.exists()) {
-        final finalSize = await finalWavFile.length();
-        print('录音文件已成功保存到: $wavPath');
-        print('最终文件大小: $finalSize 字节');
-      } else {
-        print('ERROR: 最终WAV文件不存在: $wavPath');
-      }
-      
-    } catch (e) {
-      print('静默保存录音文件失败: $e');
-      rethrow;
-    }
-  }
-
-  /// 跳转到录音列表页面
-  void _goToRecordingsList() {
-    if (mounted) {
-      // 查找主页面状态并切换到录音列表标签
-      final mainTabState = context.findAncestorStateOfType<MainTabPageState>();
-      if (mainTabState != null && mainTabState.mounted) {
-        mainTabState.setState(() {
-          mainTabState.currentIndex = 1; // 切换到录音列表标签
-        });
-        print('已跳转到录音列表页面');
-      } else {
-        print('无法找到主页面状态，跳转失败');
-      }
-    }
   }
 
   @override
@@ -471,36 +231,310 @@ class _RecordPageState extends State<RecordPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.mic, size: 80, color: Colors.deepOrange),
-          SizedBox(height: 20),
-          Text(isRecording ? '正在录制...  ${_formatDuration(_elapsedSeconds)}' : '点击下方按钮开始录制系统音频'),
-          SizedBox(height: 40),
-          Column(
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+          const SizedBox(height: 24),
+          // Header / Metadata row
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              ElevatedButton.icon(
-                onPressed: _onRecordButtonPressed,
-                icon: Icon(isRecording ? Icons.stop : Icons.fiber_manual_record, color: Colors.white),
-                label: Text(isRecording ? '停止录制' : '开始录制', style: TextStyle(color: Colors.white)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: isRecording ? Colors.grey : Colors.red,
-                  minimumSize: Size(160, 48),
-                ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '当前会话',
+                    style: TextStyle(
+                      color: AppColors.onSurfaceVariant,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '未命名档案_042',
+                    style: TextStyle(
+                      color: AppColors.primary,
+                      fontSize: 24,
+                      fontWeight: FontWeight.w800,
+                      fontFamily: 'Manrope',
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                ],
               ),
-              SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: _onShowFloatingButtonPressed,
-                style: ElevatedButton.styleFrom(
-                  minimumSize: Size(160, 44),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceContainerHigh,
+                  borderRadius: BorderRadius.circular(100),
                 ),
-                child: Text('悬浮按钮'),
+                child: Row(
+                  children: [
+                    Icon(Icons.language, color: AppColors.primary, size: 14),
+                    const SizedBox(width: 6),
+                    Text(
+                      '中文 (简体)',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Icon(Icons.expand_more, color: AppColors.outline, size: 12),
+                  ],
+                ),
               ),
             ],
           ),
-        ],
+          const SizedBox(height: 32),
+          // Visualizer
+          Container(
+            height: 180,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: AppColors.surfaceContainerLow,
+              borderRadius: BorderRadius.circular(32),
+            ),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                // Inner gradient
+                Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(32),
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        AppColors.surfaceContainerLow.withAlpha(51),
+                      ],
+                    ),
+                  ),
+                ),
+                // Mock waveform
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    _buildWaveformBar(16, AppColors.outlineVariant),
+                    _buildWaveformBar(24, AppColors.outlineVariant),
+                    _buildWaveformBar(48, AppColors.primary),
+                    _buildWaveformBar(72, AppColors.primary),
+                    _buildWaveformBar(96, AppColors.primary),
+                    _buildWaveformBar(64, AppColors.primary),
+                    _buildWaveformBar(40, AppColors.primary),
+                    _buildWaveformBar(72, AppColors.primary),
+                    _buildWaveformBar(84, AppColors.primary),
+                    _buildWaveformBar(96, AppColors.primary),
+                    _buildWaveformBar(64, AppColors.primary),
+                    _buildWaveformBar(72, AppColors.primary),
+                    _buildWaveformBar(96, AppColors.primary),
+                    _buildWaveformBar(112, AppColors.primary),
+                    _buildWaveformBar(84, AppColors.primary),
+                    _buildWaveformBar(104, AppColors.primary),
+                    _buildWaveformBar(64, AppColors.outlineVariant),
+                    _buildWaveformBar(48, AppColors.outlineVariant),
+                    _buildWaveformBar(56, AppColors.outlineVariant),
+                    _buildWaveformBar(32, AppColors.outlineVariant),
+                    _buildWaveformBar(24, AppColors.outlineVariant),
+                  ],
+                ),
+                Positioned(
+                  bottom: 24,
+                  child: Text(
+                    _formatDuration(_elapsedSeconds),
+                    style: TextStyle(
+                      fontFamily: 'Manrope',
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+          // Fake Realtime Transcription
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: AppColors.surfaceContainer,
+              borderRadius: BorderRadius.circular(32),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 6,
+                          height: 6,
+                          decoration: BoxDecoration(
+                            color: AppColors.tertiary,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '实时转录',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.onSurface,
+                            letterSpacing: 1.0,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceContainerLowest,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(Icons.open_in_full, size: 16, color: AppColors.primary),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                RichText(
+                  text: TextSpan(
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 16,
+                      color: AppColors.onSurface.withAlpha(230),
+                      height: 1.6,
+                    ),
+                    children: [
+                      TextSpan(text: '“……声音的架构不仅仅是记录频率，而是捕捉说话者呼吸背后的'),
+                      WidgetSpan(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryFixed,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            '意图',
+                            style: TextStyle(color: AppColors.onPrimaryFixedVariant, fontSize: 16),
+                          ),
+                        ),
+                      ),
+                      TextSpan(text: '。当我们存档这些时刻时，我们本质上是在构建一个人类意识的图书馆……”'),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 32),
+          // Controls
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              Column(
+                children: [
+                  Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceContainer,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Icon(Icons.description, color: AppColors.onSurfaceVariant),
+                  ),
+                  const SizedBox(height: 8),
+                  Text('笔记', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.onSurfaceVariant, letterSpacing: 2)),
+                ],
+              ),
+              GestureDetector(
+                onTap: _onRecordButtonPressed,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    if (isRecording)
+                      Container(
+                        width: 120,
+                        height: 120,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: AppColors.tertiary.withAlpha(12),
+                        ),
+                      ),
+                    Container(
+                      width: 88,
+                      height: 88,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: isRecording
+                            ? [AppColors.tertiary, AppColors.error]
+                            : [AppColors.primary, AppColors.primaryContainer],
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.onSurface.withAlpha(38),
+                            blurRadius: 24,
+                            offset: Offset(0, 8),
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        isRecording ? Icons.stop : Icons.mic,
+                        color: Colors.white,
+                        size: 40,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                children: [
+                  Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceContainer,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Icon(Icons.layers, color: AppColors.onSurfaceVariant),
+                  ),
+                  const SizedBox(height: 8),
+                  Text('图层', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.onSurfaceVariant, letterSpacing: 2)),
+                ],
+              ),
+            ],
+          ),
+            const SizedBox(height: 80), // Space for bottom nav
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWaveformBar(double height, Color color) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 1.5),
+      width: 4,
+      height: height,
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(10),
       ),
     );
   }

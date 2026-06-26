@@ -7,6 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import 'submit_transcribe_task_page.dart';
 import '../services/storage_service.dart';
 import 'transcribe_task_detail_page.dart';
+import '../utils/colors.dart';
 
 class RecordingsListPage extends StatefulWidget {
   @override
@@ -43,8 +44,6 @@ class _RecordingsListPageState extends State<RecordingsListPage> {
     super.dispose();
   }
 
-  /// 加载本地录音文件列表，并按修改时间倒序排序；
-  /// 同时检测每条录音对应的转写任务是否已有文本结果。
   Future<void> _loadRecordings() async {
     setState(() => _loading = true);
     try {
@@ -67,9 +66,8 @@ class _RecordingsListPageState extends State<RecordingsListPage> {
                 size: f.lengthSync(),
                 sourceApp: null,
               ))
-          .toList();
-      // 默认排序改为：按时间倒序（最新在前）
-      newRecordings.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          .toList()
+        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
       
       // 检查每个录音是否有对应的转录任务
       final allTranscripts = await StorageService.getAllTranscripts();
@@ -193,12 +191,11 @@ class _RecordingsListPageState extends State<RecordingsListPage> {
   }
 
   String _formatDateTime(DateTime dt) {
-    return "${dt.year.toString().padLeft(4, '0')}-"
-        "${dt.month.toString().padLeft(2, '0')}-"
-        "${dt.day.toString().padLeft(2, '0')} "
+    return "${dt.year.toString()}年"
+        "${dt.month.toString().padLeft(2, '0')}月"
+        "${dt.day.toString().padLeft(2, '0')}日 "
         "${dt.hour.toString().padLeft(2, '0')}:"
-        "${dt.minute.toString().padLeft(2, '0')}:"
-        "${dt.second.toString().padLeft(2, '0')}";
+        "${dt.minute.toString().padLeft(2, '0')}";
   }
 
   @override
@@ -206,150 +203,254 @@ class _RecordingsListPageState extends State<RecordingsListPage> {
     return RefreshIndicator(
       onRefresh: _loadRecordings,
       child: _loading
-          ? Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator())
           : recordings.isEmpty
           ? ListView(
               children: [
-                SizedBox(height: 120),
-                Center(child: Text('暂无录音，快去录制吧~', style: TextStyle(fontSize: 16, color: Colors.grey))),
+                const SizedBox(height: 120),
+                Center(
+                  child: Text('暂无录音，快去录制吧~', style: TextStyle(fontSize: 16, color: AppColors.onSurfaceVariant)),
+                ),
               ],
             )
           : ListView.builder(
+              padding: const EdgeInsets.only(left: 24, right: 24, top: 16, bottom: 100), // add bottom padding for nav
               itemCount: recordings.length,
               itemBuilder: (context, index) {
                 final rec = recordings[index];
-                return Column(
-                  children: [
-                    ListTile(
-                      leading: Icon(Icons.audiotrack),
-                      title: Column(
+                final fileName = rec.filePath.split('/').last;
+                final bool hasTranscript = _transcriptionOrderIds.containsKey(rec.filePath);
+
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceContainerLow,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withAlpha(5),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      )
+                    ]
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            rec.filePath.split('/').last,
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          SizedBox(height: 4),
-                          Text(
-                            '大小: \\${_formatSize(rec.size)}',
-                            style: TextStyle(fontSize: 13, color: Colors.grey[700]),
-                          ),
-                          Text(
-                            '时间: \\${_formatDateTime(rec.createdAt)}',
-                            style: TextStyle(fontSize: 13, color: Colors.grey[700]),
-                          ),
-                          SizedBox(height: 8),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              if (_playingIndex == index && _playerState?.playing == true)
-                                IconButton(
-                                  icon: Icon(Icons.pause),
-                                  tooltip: '暂停',
-                                  onPressed: _pauseRecording,
-                                )
-                              else if (_playingIndex == index && _playerState?.playing == false && _playerState?.processingState == ProcessingState.ready)
-                                IconButton(
-                                  icon: Icon(Icons.play_arrow),
-                                  tooltip: '继续播放',
-                                  onPressed: _resumeRecording,
-                                )
-                              else
-                                IconButton(
-                                  icon: Icon(Icons.play_arrow),
-                                  tooltip: '播放',
-                                  onPressed: () => _playRecording(rec, index),
-                                ),
-                              if (_playingIndex == index)
-                                IconButton(
-                                  icon: Icon(Icons.stop),
-                                  tooltip: '停止',
-                                  onPressed: _stopRecording,
-                                ),
-                              IconButton(
-                                icon: Icon(Icons.delete),
-                                tooltip: '删除',
-                                onPressed: () async {
-                                  final confirm = await showDialog<bool>(
-                                    context: context,
-                                    builder: (context) => AlertDialog(
-                                      title: Text('确认删除'),
-                                      content: Text('确定要删除该录音吗？'),
-                                      actions: [
-                                        TextButton(onPressed: () => Navigator.pop(context, false), child: Text('取消')),
-                                        TextButton(onPressed: () => Navigator.pop(context, true), child: Text('删除')),
-                                      ],
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        fileName,
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16,
+                                          fontFamily: 'Manrope',
+                                          color: AppColors.onSurface,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
                                     ),
-                                  );
-                                  if (confirm == true) {
-                                    await _deleteRecording(rec);
-                                  }
-                                },
-                              ),
-                              TextButton(
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => SubmitTranscribeTaskPage(audioPath: rec.filePath),
-                                    ),
-                                  );
-                                },
-                                child: Text('转文字'),
-                              ),
-                              // 如果该录音已有转录文本，显示"查看文字"按钮
-                              if (_transcriptionOrderIds.containsKey(rec.filePath))
-                                TextButton(
-                                  onPressed: () {
-                                    final orderId = _transcriptionOrderIds[rec.filePath]!;
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => TranscribeTaskDetailPage(
-                                          orderId: orderId,
-                                          autoStartAiChat: false,
+                                    if (hasTranscript) ...[
+                                      const SizedBox(width: 8),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.primaryFixed,
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                        child: Text(
+                                          '已转录',
+                                          style: TextStyle(
+                                            color: AppColors.onPrimaryFixedVariant,
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.bold,
+                                            letterSpacing: 1.0,
+                                          ),
                                         ),
                                       ),
-                                    );
-                                  },
-                                  style: TextButton.styleFrom(
-                                    foregroundColor: Colors.green,
-                                  ),
-                                  child: Text('查看文字'),
+                                    ],
+                                  ],
                                 ),
-                            ],
+                                const SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    Text(
+                                      _formatDateTime(rec.createdAt),
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: AppColors.onSurfaceVariant,
+                                        fontFamily: 'Inter',
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Container(width: 4, height: 4, decoration: BoxDecoration(color: AppColors.outlineVariant, shape: BoxShape.circle)),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      _formatSize(rec.size),
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: AppColors.onSurfaceVariant,
+                                        fontFamily: 'Inter',
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          // Play/Pause Button
+                          GestureDetector(
+                            onTap: () {
+                              if (_playingIndex == index && _playerState?.playing == true) {
+                                _pauseRecording();
+                              } else if (_playingIndex == index && _playerState?.playing == false) {
+                                _resumeRecording();
+                              } else {
+                                _playRecording(rec, index);
+                              }
+                            },
+                            child: Container(
+                              width: 48,
+                              height: 48,
+                              decoration: BoxDecoration(
+                                color: AppColors.primary,
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppColors.primary.withAlpha(51),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: Icon(
+                                (_playingIndex == index && _playerState?.playing == true)
+                                  ? Icons.pause
+                                  : Icons.play_arrow,
+                                color: Colors.white,
+                              ),
+                            ),
                           ),
                         ],
                       ),
-                      onTap: () => _playRecording(rec, index),
-                    ),
-                    if (_playingIndex == index && _duration != null)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                        child: Column(
+                      if (_playingIndex == index && _duration != null) ...[
+                        const SizedBox(height: 16),
+                        Row(
                           children: [
-                            Slider(
-                              min: 0,
-                              max: _duration!.inMilliseconds.toDouble(),
-                              value: (_position?.inMilliseconds ?? 0).clamp(0, _duration!.inMilliseconds).toDouble(),
-                              onChanged: (v) async {
-                                await _player?.seek(Duration(milliseconds: v.toInt()));
-                              },
+                            Expanded(
+                              child: SliderTheme(
+                                data: SliderTheme.of(context).copyWith(
+                                  trackHeight: 4,
+                                  thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+                                  overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
+                                  activeTrackColor: AppColors.primary,
+                                  inactiveTrackColor: AppColors.outlineVariant,
+                                  thumbColor: AppColors.primary,
+                                ),
+                                child: Slider(
+                                  min: 0,
+                                  max: _duration!.inMilliseconds.toDouble(),
+                                  value: (_position?.inMilliseconds ?? 0).clamp(0, _duration!.inMilliseconds).toDouble(),
+                                  onChanged: (v) async {
+                                    await _player?.seek(Duration(milliseconds: v.toInt()));
+                                  },
+                                ),
+                              ),
                             ),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(_formatDateTime(rec.createdAt)),
-                                Text(_formatDateTime(rec.createdAt.add(_duration!))),
-                              ],
+                            Text(
+                              '${(_position?.inSeconds ?? 0) ~/ 60}:${((_position?.inSeconds ?? 0) % 60).toString().padLeft(2, '0')} / ${_duration!.inSeconds ~/ 60}:${(_duration!.inSeconds % 60).toString().padLeft(2, '0')}',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.primary,
+                              ),
                             ),
                           ],
                         ),
+                      ],
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          if (_playingIndex == index)
+                            IconButton(
+                              icon: Icon(Icons.stop, color: AppColors.onSurfaceVariant, size: 20),
+                              tooltip: '停止',
+                              onPressed: _stopRecording,
+                            ),
+                          IconButton(
+                            icon: Icon(Icons.delete_outline, color: AppColors.error, size: 20),
+                            tooltip: '删除',
+                            onPressed: () async {
+                              final confirm = await showDialog<bool>(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  title: const Text('确认删除'),
+                                  content: const Text('确定要删除该录音吗？'),
+                                  actions: [
+                                    TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('取消')),
+                                    TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('删除', style: TextStyle(color: Colors.red))),
+                                  ],
+                                ),
+                              );
+                              if (confirm == true) {
+                                await _deleteRecording(rec);
+                              }
+                            },
+                          ),
+                          const Spacer(),
+                          if (!hasTranscript)
+                            TextButton.icon(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => SubmitTranscribeTaskPage(audioPath: rec.filePath),
+                                  ),
+                                );
+                              },
+                              icon: Icon(Icons.text_snippet, size: 16),
+                              label: Text('转写'),
+                              style: TextButton.styleFrom(
+                                foregroundColor: AppColors.primary,
+                                textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                              ),
+                            ),
+                          if (hasTranscript)
+                            TextButton.icon(
+                              onPressed: () {
+                                final orderId = _transcriptionOrderIds[rec.filePath]!;
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => TranscribeTaskDetailPage(
+                                      orderId: orderId,
+                                      autoStartAiChat: false,
+                                    ),
+                                  ),
+                                );
+                              },
+                              icon: Icon(Icons.visibility, size: 16),
+                              label: Text('查看'),
+                              style: TextButton.styleFrom(
+                                foregroundColor: AppColors.primary,
+                                textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                              ),
+                            ),
+                        ],
                       ),
-                    Divider(height: 1, thickness: 1, indent: 16, endIndent: 16),
-                  ],
+                    ],
+                  ),
                 );
               },
             ),

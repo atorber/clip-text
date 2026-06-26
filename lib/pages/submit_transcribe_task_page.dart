@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/storage_service.dart';
+import '../services/qwen_asr_service.dart';
 import 'settings_page.dart';
 import 'dart:io';
 import 'package:just_audio/just_audio.dart';
@@ -21,11 +22,21 @@ class _SubmitTranscribeTaskPageState extends State<SubmitTranscribeTaskPage> {
   int? _fileSize;
   Duration? _duration;
   bool _loading = true;
+  String _provider = StorageService.transcribeProviderIflytek;
 
   @override
   void initState() {
     super.initState();
     _loadInfo();
+    _loadProvider();
+  }
+
+  Future<void> _loadProvider() async {
+    final config = await StorageService.getTranscribeApiConfig();
+    if (!mounted) return;
+    setState(() {
+      _provider = config['provider'] ?? StorageService.transcribeProviderIflytek;
+    });
   }
 
   Future<void> _loadInfo() async {
@@ -114,96 +125,199 @@ class _SubmitTranscribeTaskPageState extends State<SubmitTranscribeTaskPage> {
     }
   }
 
-  Future<void> _submitTranscribeTask() async {
+  Future<bool> _ensureTranscribeConfig() async {
     final config = await StorageService.getTranscribeApiConfig();
-    final appId = config['appId']?.trim();
-    final secretKey = config['secretKey']?.trim();
-    if (appId == null || appId.isEmpty || secretKey == null || secretKey.isEmpty) {
-      if (!mounted) return;
-      final goSetting = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text('未设置API信息'),
-          content: Text('请先在设置中填写转文字API的APPID和SecretKey'),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(context, false), child: Text('取消')),
-            TextButton(onPressed: () => Navigator.pop(context, true), child: Text('去设置')),
-          ],
+    final provider = config['provider'] ?? StorageService.transcribeProviderIflytek;
+
+    final missingIflytek = provider == StorageService.transcribeProviderIflytek &&
+        ((config['appId']?.trim().isEmpty ?? true) ||
+            (config['secretKey']?.trim().isEmpty ?? true));
+    final missingQwen = provider == StorageService.transcribeProviderQwen &&
+        (config['qwenApiKey']?.trim().isEmpty ?? true);
+
+    if (!missingIflytek && !missingQwen) {
+      return true;
+    }
+
+    if (!mounted) return false;
+    final goSetting = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('未设置API信息'),
+        content: Text(
+          provider == StorageService.transcribeProviderQwen
+              ? '请先在设置中填写通义千问 API Key'
+              : '请先在设置中填写转文字API的APPID和SecretKey',
         ),
-      );
-      if (!mounted) return;
-      if (goSetting == true) {
-        Navigator.push(context, MaterialPageRoute(builder: (_) => SettingsPage()));
-      }
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('取消')),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('去设置')),
+        ],
+      ),
+    );
+    if (!mounted) return false;
+    if (goSetting == true) {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => SettingsPage()));
+    }
+    return false;
+  }
+
+  Future<void> _submitWithIflytek() async {
+    final config = await StorageService.getTranscribeApiConfig();
+    final appId = config['appId']!.trim();
+    final secretKey = config['secretKey']!.trim();
+
+    final orderId = await _uploadAudioFile(
+      appId: appId,
+      secretKey: secretKey,
+      audioPath: widget.audioPath,
+      duration: _duration?.inSeconds,
+    );
+
+    final transcript = {
+      'id': DateTime.now().millisecondsSinceEpoch.toString(),
+      'recordingId': widget.audioPath,
+      'text': '',
+      'createdAt': DateTime.now().toIso8601String(),
+      'orderId': orderId,
+      'provider': StorageService.transcribeProviderIflytek,
+    };
+    await StorageService.insertTranscript(transcript);
+
+    if (!mounted) return;
+    Navigator.pop(context);
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('上传成功'),
+        content: Text('任务已提交，orderId: $orderId'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.of(context).pop();
+              final mainTabState = context.findAncestorStateOfType<MainTabPageState>();
+              if (mainTabState != null && mainTabState.mounted) {
+                mainTabState.setState(() {
+                  mainTabState.currentIndex = 2;
+                });
+              }
+            },
+            child: const Text('确定'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              if (mounted) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => TranscribeTaskDetailPage(
+                      orderId: orderId,
+                      autoStartAiChat: false,
+                    ),
+                  ),
+                );
+              }
+            },
+            child: const Text('查看结果'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _submitWithQwen() async {
+    final text = await QwenAsrService.transcribeAudioFile(audioPath: widget.audioPath);
+    final orderId = 'qwen_${DateTime.now().millisecondsSinceEpoch}';
+
+    final transcript = {
+      'id': DateTime.now().millisecondsSinceEpoch.toString(),
+      'recordingId': widget.audioPath,
+      'text': text,
+      'createdAt': DateTime.now().toIso8601String(),
+      'orderId': orderId,
+      'provider': StorageService.transcribeProviderQwen,
+    };
+    await StorageService.insertTranscript(transcript);
+
+    if (!mounted) return;
+    Navigator.pop(context);
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('转写完成'),
+        content: Text('通义千问转写成功，共 ${text.length} 字'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.of(context).pop();
+              final mainTabState = context.findAncestorStateOfType<MainTabPageState>();
+              if (mainTabState != null && mainTabState.mounted) {
+                mainTabState.setState(() {
+                  mainTabState.currentIndex = 2;
+                });
+              }
+            },
+            child: const Text('确定'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              if (mounted) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => TranscribeTaskDetailPage(
+                      orderId: orderId,
+                      autoStartAiChat: false,
+                    ),
+                  ),
+                );
+              }
+            },
+            child: const Text('查看结果'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _submitTranscribeTask() async {
+    if (!await _ensureTranscribeConfig()) {
       return;
     }
+
+    final config = await StorageService.getTranscribeApiConfig();
+    final provider = config['provider'] ?? StorageService.transcribeProviderIflytek;
+    final isQwen = provider == StorageService.transcribeProviderQwen;
+
     try {
       if (!mounted) return;
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (_) => Center(child: CircularProgressIndicator()),
-      );
-      // 步骤1：上传音频获取orderId
-      final orderId = await _uploadAudioFile(
-        appId: appId,
-        secretKey: secretKey,
-        audioPath: widget.audioPath,
-        duration: _duration?.inSeconds,
-      );
-      // 步骤2：轮询获取转写结果（可选，后续实现）
-      // 保存转写任务到文本库，初始text为空
-      final transcript = {
-        'id': DateTime.now().millisecondsSinceEpoch.toString(),
-        'recordingId': widget.audioPath,
-        'text': '',
-        'createdAt': DateTime.now().toIso8601String(),
-        'orderId': orderId,
-      };
-      await StorageService.insertTranscript(transcript);
-      if (!mounted) return;
-      Navigator.pop(context); // 关闭loading
-      if (!mounted) return;
-      showDialog(
-        context: context,
         builder: (_) => AlertDialog(
-          title: Text('上传成功'),
-          content: Text('任务已提交，orderId: $orderId'),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context); // 关闭弹窗
-                Navigator.of(context).pop(); // 返回上一页
-                // 跳转到文本库tab页
-                final mainTabState = context.findAncestorStateOfType<MainTabPageState>();
-                if (mainTabState != null && mainTabState.mounted) {
-                  mainTabState.setState(() {
-                    mainTabState.currentIndex = 2; // 文本库tab索引
-                  });
-                }
-              },
-              child: Text('确定'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context); // 关闭弹窗
-                if (mounted) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => TranscribeTaskDetailPage(
-                        orderId: orderId,
-                        autoStartAiChat: false,
-                      ),
-                    ),
-                  );
-                }
-              },
-              child: Text('查看结果'),
-            ),
-          ],
+          content: Row(
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(width: 20),
+              Expanded(
+                child: Text(isQwen ? '正在使用通义千问转写...' : '正在上传音频...'),
+              ),
+            ],
+          ),
         ),
       );
+
+      if (isQwen) {
+        await _submitWithQwen();
+      } else {
+        await _submitWithIflytek();
+      }
     } catch (e) {
       if (!mounted) return;
       Navigator.pop(context); // 关闭loading
@@ -237,10 +351,19 @@ class _SubmitTranscribeTaskPageState extends State<SubmitTranscribeTaskPage> {
                   Text('文件大小：${_formatSize(_fileSize)}'),
                   SizedBox(height: 8),
                   Text('音频时长：${_formatDuration(_duration)}'),
+                  SizedBox(height: 8),
+                  Text(
+                    '当前引擎：${_provider == StorageService.transcribeProviderQwen ? '通义千问' : '讯飞'}',
+                    style: TextStyle(color: Colors.grey[700]),
+                  ),
                   SizedBox(height: 32),
                   ElevatedButton(
                     onPressed: _submitTranscribeTask,
-                    child: Text('提交转写任务'),
+                    child: Text(
+                      _provider == StorageService.transcribeProviderQwen
+                          ? '开始转写'
+                          : '提交转写任务',
+                    ),
                   ),
                 ],
               ),

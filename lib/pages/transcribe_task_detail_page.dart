@@ -8,6 +8,7 @@ import 'package:crypto/crypto.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:share_plus/share_plus.dart';
+import '../utils/colors.dart';
 
 // 聊天消息类
 class ChatMessage {
@@ -135,11 +136,24 @@ class _TranscribeTaskDetailPageState extends State<TranscribeTaskDetailPage> {
       _audioReady = audioReady;
     });
     if (task != null && (task['text'] == null || (task['text'] as String).trim().isEmpty)) {
-      _queryTranscribeResult(task);
+      final provider = task['provider'] as String? ?? StorageService.transcribeProviderIflytek;
+      if (provider != StorageService.transcribeProviderQwen) {
+        _queryTranscribeResult(task);
+      }
     }
   }
 
   Future<void> _queryTranscribeResult(Map task) async {
+    final provider = task['provider'] as String? ?? StorageService.transcribeProviderIflytek;
+    if (provider == StorageService.transcribeProviderQwen) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('通义千问转写为同步接口，请重新提交转写任务')),
+        );
+      }
+      return;
+    }
+
     setState(() { _querying = true; });
     try {
       final config = await StorageService.getTranscribeApiConfig();
@@ -428,22 +442,23 @@ class _TranscribeTaskDetailPageState extends State<TranscribeTaskDetailPage> {
   Widget build(BuildContext context) {
     if (_loading) {
       return Scaffold(
-        appBar: AppBar(title: Text('转写详情')),
-        body: Center(child: CircularProgressIndicator()),
+        appBar: AppBar(title: Text('转写详情', style: TextStyle(fontFamily: 'Manrope', fontWeight: FontWeight.bold))),
+        body: const Center(child: CircularProgressIndicator()),
       );
     }
     if (_task == null) {
       return Scaffold(
-        appBar: AppBar(title: Text('转写详情')),
-        body: Center(child: Text('未找到任务')),
+        appBar: AppBar(title: Text('转写详情', style: TextStyle(fontFamily: 'Manrope', fontWeight: FontWeight.bold))),
+        body: const Center(child: Text('未找到任务')),
       );
     }
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('转写详情'),
-        backgroundColor: Colors.blue[50],
+        title: Text('转写详情', style: TextStyle(fontFamily: 'Manrope', fontWeight: FontWeight.bold, color: AppColors.primary)),
+        backgroundColor: Colors.transparent,
         elevation: 0,
+        iconTheme: IconThemeData(color: AppColors.primary),
       ),
       body: Column(
           children: [
@@ -451,13 +466,13 @@ class _TranscribeTaskDetailPageState extends State<TranscribeTaskDetailPage> {
           Container(
             padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.surfaceContainerLowest,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.grey.withValues(alpha: 0.1),
+                  color: Colors.black.withAlpha(10),
                   spreadRadius: 1,
-                  blurRadius: 5,
-                  offset: Offset(0, 2),
+                  blurRadius: 10,
+                  offset: Offset(0, 4),
                 ),
               ],
             ),
@@ -1057,10 +1072,8 @@ $content
 
   // 构建聊天气泡
   Widget _buildMessageBubble(ChatMessage message) {
-    // 查找对应的用户问题（用于AI回复的分享）
     String? correspondingUserQuestion;
     if (!message.isUser && message.isMarkdown) {
-      // 查找前一条用户消息
       final currentIndex = _messages.indexOf(message);
       if (currentIndex > 0) {
         final previousMessage = _messages[currentIndex - 1];
@@ -1070,175 +1083,190 @@ $content
       }
     }
     return Padding(
-      padding: EdgeInsets.only(bottom: 16),
-      child: Row(
-        mainAxisAlignment: message.isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.start,
+      padding: EdgeInsets.only(bottom: 24),
+      child: Column(
+        crossAxisAlignment: message.isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
         children: [
-          if (!message.isUser) ...[
-            // AI头像
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: Colors.blue[100],
-                borderRadius: BorderRadius.circular(18),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: message.isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+            children: message.isUser
+              ? [
+                  Text(
+                    '您',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.onSurfaceVariant,
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    width: 24,
+                    height: 24,
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceContainerHighest,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(Icons.person, color: AppColors.onSurfaceVariant, size: 14),
+                  ),
+                ]
+              : [
+                  Container(
+                    width: 24,
+                    height: 24,
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryContainer,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(Icons.auto_awesome, color: AppColors.onPrimary, size: 14),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '声波智能',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary,
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                ],
+          ),
+          const SizedBox(height: 8),
+          Container(
+            constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.85),
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: message.isUser ? AppColors.primary : AppColors.surfaceContainerLow,
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(20),
+                topRight: Radius.circular(20),
+                bottomLeft: Radius.circular(message.isUser ? 20 : 4),
+                bottomRight: Radius.circular(message.isUser ? 4 : 20),
               ),
-              child: Icon(Icons.smart_toy, color: Colors.blue[700], size: 20),
+              boxShadow: message.isUser ? [
+                BoxShadow(
+                  color: AppColors.primary.withAlpha(51),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                )
+              ] : [],
             ),
-            SizedBox(width: 8),
-          ],
-          // 消息气泡
-          Flexible(
-            child: Container(
-              constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.7),
-              padding: EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: message.isUser ? Colors.blue[500] : Colors.grey[100],
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(16),
-                  topRight: Radius.circular(16),
-                  bottomLeft: Radius.circular(message.isUser ? 16 : 4),
-                  bottomRight: Radius.circular(message.isUser ? 4 : 16),
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // 消息内容
-                  SelectionArea(
-                    child: message.isMarkdown && !message.isUser
-                              ? MarkdownBlock(
-                          data: message.content,
-                                  config: MarkdownConfig(
-                                    configs: [
-                                      PConfig(
-                                textStyle: TextStyle(
-                                  fontSize: 14, 
-                                  height: 1.5,
-                                  color: message.isUser ? Colors.white : Colors.black87,
-                                      ),
-                              ),
-                                      PreConfig(
-                                        textStyle: const TextStyle(
-                                          fontFamily: 'monospace',
-                                          fontSize: 13,
-                                          color: Colors.green,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: Colors.grey[200],
-                                          borderRadius: BorderRadius.circular(4),
-                                        ),
-                                        padding: const EdgeInsets.all(8),
-                                      ),
-                                      H1Config(
-                                style: TextStyle(
-                                  fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                  color: message.isUser ? Colors.white : Colors.black87,
-                                        ),
-                                      ),
-                                      H2Config(
-                                style: TextStyle(
-                                  fontSize: 16,
-                                          fontWeight: FontWeight.bold,
-                                  color: message.isUser ? Colors.white : Colors.black87,
-                                        ),
-                                      ),
-                                      H3Config(
-                                style: TextStyle(
-                                  fontSize: 15,
-                                          fontWeight: FontWeight.bold,
-                                  color: message.isUser ? Colors.white : Colors.black87,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                )
-                              : Text(
-                          message.content,
-                          style: TextStyle(
-                            fontSize: 14,
-                            height: 1.5,
-                            color: message.isUser ? Colors.white : Colors.black87,
-                                ),
-                          ),
-                        ),
-                        SizedBox(height: 8),
-                  // 时间戳和操作按钮
-                        Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                      Text(
-                        '${message.timestamp.hour.toString().padLeft(2, '0')}:${message.timestamp.minute.toString().padLeft(2, '0')}',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: message.isUser ? Colors.white70 : Colors.grey[600],
-                                ),
-                              ),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          // 复制按钮
-                          GestureDetector(
-                            onTap: () {
-                              Clipboard.setData(ClipboardData(text: message.content));
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('消息已复制到剪贴板'),
-                                  duration: Duration(seconds: 1),
-                                ),
-                                );
-                              },
-                            child: Icon(
-                              Icons.copy,
-                              size: 14,
-                              color: message.isUser ? Colors.white70 : Colors.grey[600],
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SelectionArea(
+                  child: message.isMarkdown && !message.isUser
+                    ? MarkdownBlock(
+                        data: message.content,
+                        config: MarkdownConfig(
+                          configs: [
+                            PConfig(
+                              textStyle: TextStyle(
+                                fontSize: 14,
+                                height: 1.6,
+                                color: AppColors.onSurface,
                               ),
                             ),
-                          SizedBox(width: 8),
-                          // 分享按钮
-                          GestureDetector(
-                            onTap: () {
-                              if (!message.isUser && correspondingUserQuestion != null) {
-                                // 分享AI回复
-                                _shareAiMessage(message.content, correspondingUserQuestion);
-                              } else {
-                                // 分享普通消息
-                                Share.share(
-                                  message.content,
-                                  subject: message.isUser ? '用户消息分享' : 'AI回复分享',
-                                );
-                              }
-                            },
-                            child: Icon(
-                              Icons.share,
-                              size: 14,
-                              color: message.isUser ? Colors.white70 : Colors.grey[600],
+                            PreConfig(
+                              textStyle: const TextStyle(
+                                fontFamily: 'monospace',
+                                fontSize: 13,
+                                color: AppColors.primary,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.surfaceContainerHighest,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              padding: const EdgeInsets.all(12),
                             ),
-                          ),
+                            H1Config(
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                fontFamily: 'Manrope',
+                                color: AppColors.onSurface,
+                              ),
+                            ),
+                            H2Config(
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                fontFamily: 'Manrope',
+                                color: AppColors.onSurface,
+                              ),
+                            ),
+                            H3Config(
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                                fontFamily: 'Manrope',
+                                color: AppColors.onSurface,
+                              ),
+                            ),
                           ],
                         ),
-                      ],
-                  ),
-                    ],
-                  ),
+                      )
+                    : Text(
+                        message.content,
+                        style: TextStyle(
+                          fontSize: 14,
+                          height: 1.6,
+                          color: message.isUser ? Colors.white : AppColors.onSurface,
+                        ),
+                      ),
                 ),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '${message.timestamp.hour.toString().padLeft(2, '0')}:${message.timestamp.minute.toString().padLeft(2, '0')}',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: message.isUser ? Colors.white70 : AppColors.onSurfaceVariant.withAlpha(153),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    GestureDetector(
+                      onTap: () {
+                        Clipboard.setData(ClipboardData(text: message.content));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('消息已复制到剪贴板'), duration: Duration(seconds: 1)),
+                        );
+                      },
+                      child: Icon(
+                        Icons.copy,
+                        size: 14,
+                        color: message.isUser ? Colors.white70 : AppColors.onSurfaceVariant.withAlpha(153),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    GestureDetector(
+                      onTap: () {
+                        if (!message.isUser && correspondingUserQuestion != null) {
+                          _shareAiMessage(message.content, correspondingUserQuestion);
+                        } else {
+                          Share.share(
+                            message.content,
+                            subject: message.isUser ? '用户消息分享' : 'AI回复分享',
+                          );
+                        }
+                      },
+                      child: Icon(
+                        Icons.share,
+                        size: 14,
+                        color: message.isUser ? Colors.white70 : AppColors.onSurfaceVariant.withAlpha(153),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
-          if (message.isUser) ...[
-            SizedBox(width: 8),
-            // 用户头像
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: Colors.green[100],
-                borderRadius: BorderRadius.circular(18),
-              ),
-              child: Icon(Icons.person, color: Colors.green[700], size: 20),
-              ),
-            ],
-          ],
+        ],
       ),
     );
   }
@@ -1246,32 +1274,44 @@ $content
   // 构建输入中指示器
   Widget _buildTypingIndicator() {
     return Padding(
-      padding: EdgeInsets.only(bottom: 16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.start,
+      padding: EdgeInsets.only(bottom: 24),
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // AI头像
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: Colors.blue[100],
-              borderRadius: BorderRadius.circular(18),
-            ),
-            child: Icon(Icons.smart_toy, color: Colors.blue[700], size: 20),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  color: AppColors.primaryContainer,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.auto_awesome, color: AppColors.onPrimary, size: 14),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                '声波智能',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primary,
+                  letterSpacing: 1.0,
+                ),
+              ),
+            ],
           ),
-          SizedBox(width: 8),
-          // 输入中气泡
+          const SizedBox(height: 8),
           Container(
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             decoration: BoxDecoration(
-              color: Colors.grey[100],
+              color: AppColors.surfaceContainerLow,
               borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(16),
-                topRight: Radius.circular(16),
+                topLeft: Radius.circular(20),
+                topRight: Radius.circular(20),
                 bottomLeft: Radius.circular(4),
-                bottomRight: Radius.circular(16),
+                bottomRight: Radius.circular(20),
               ),
             ),
             child: Row(
@@ -1281,17 +1321,17 @@ $content
                   'AI正在思考',
                   style: TextStyle(
                     fontSize: 14,
-                    color: Colors.grey[600],
+                    color: AppColors.onSurfaceVariant,
                     fontStyle: FontStyle.italic,
                   ),
                 ),
-                SizedBox(width: 8),
+                SizedBox(width: 12),
                 SizedBox(
                   width: 16,
                   height: 16,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
                   ),
                 ),
               ],
